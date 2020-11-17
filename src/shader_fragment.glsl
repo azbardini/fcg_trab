@@ -13,11 +13,9 @@ uniform mat4 view;
 uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
-#define SPHERE  0
-#define BUNNY   1
-#define PLANE   2
-#define DOIS_PI 6.28318530
-
+#define SPHERE 0
+#define BUNNY  1
+#define PLANE  2
 uniform int object_id;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
@@ -41,18 +39,11 @@ void main()
     // normais de cada vértice.
     vec4 n = normalize(normal);
 
+    // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
+    vec4 l = normalize(vec4(1.0,1.0,0.5,0.0));
+
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
-
-    // Vetores e configurações do spotlight
-    vec4 posicaoSpotlight = vec4(0.0,2.0,1.0,1.0);
-    vec4 spotlightSense = vec4(0.0,-1.0,0.0,0.0);
-    float spotlightWidth = DOIS_PI/12;
-    float cosVecToPoint = dot(normalize(p-posicaoSpotlight),normalize(spotlightSense));
-    bool hidePointInShadow = cosVecToPoint < cos(spotlightWidth);
-
-    // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(posicaoSpotlight - p);
 
     // Vetor que define o sentido da reflexão especular ideal.
     vec4 r = -l + 2*n*dot(n,l); 
@@ -112,10 +103,28 @@ void main()
 
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    color = hidePointInShadow ? ambient_term : lambert_diffuse_term + ambient_term + phong_specular_term;
+    if ( object_id == SPHERE )
+    {
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
+    }
+    else if ( object_id == BUNNY )
+    {
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
+    }
+    else if ( object_id == PLANE )
+    {
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
+    }
+    else // Objeto desconhecido = preto
+    {
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
+    }
+
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
     color = pow(color, vec3(1.0,1.0,1.0)/2.2);
+
+
 } 
 
