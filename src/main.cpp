@@ -142,6 +142,8 @@ struct SceneObject
     size_t       num_indices; // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
     GLenum       rendering_mode; // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
     GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
+    glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
+    glm::vec3    bbox_max;
 };
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
@@ -199,8 +201,10 @@ GLint model_uniform;
 GLint view_uniform;
 GLint projection_uniform;
 GLint object_id_uniform;
+GLint bbox_min_uniform;
+GLint bbox_max_uniform;
 
-glm::vec4 firstCameraPos  = glm::vec4(1.0f, 1.0f, 4.0f, 1.0f);
+glm::vec4 firstCameraPos  = glm::vec4(1.0f, 1.0f, -4.0f, 1.0f);
 glm::vec4 cameraPos  = firstCameraPos;
 
 static int cosAngle(glm::vec4 v1, glm::vec4 v2);
@@ -210,7 +214,6 @@ GLuint g_NumLoadedTextures = 0;
 
 // Estados da maquina
 glm::vec4 cameraTarget;
-
 int throwBunny = 0;
 glm::vec4 throwBunnyVector;
 
@@ -288,8 +291,9 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Carregamos duas imagens para serem utilizadas como textura
-    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
-    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
+    LoadTextureImage("../../data/grass.jpg");      // TextureImage0
+    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage1
+    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage2
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel cowModel("../../data/cow.obj");
@@ -476,7 +480,6 @@ int main(int argc, char* argv[])
             throwBunny = 0;
         }
 
-
         // Desenhamos o modelo do plano
         model = Matrix_Translate(0.0f,-1.0f,0.0f) 
               * Matrix_Scale(20.0f,1.0f,20.0f);
@@ -588,6 +591,13 @@ void DrawVirtualObject(const char* object_name)
     // comentários detalhados dentro da definição de BuildTrianglesAndAddToVirtualScene().
     glBindVertexArray(g_VirtualScene[object_name].vertex_array_object_id);
 
+    // Setamos as variáveis "bbox_min" e "bbox_max" do fragment shader
+    // com os parâmetros da axis-aligned bounding box (AABB) do modelo.
+    glm::vec3 bbox_min = g_VirtualScene[object_name].bbox_min;
+    glm::vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
+    glUniform4f(bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
+    glUniform4f(bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
+
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
     // apontados pelo VAO como linhas. Veja a definição de
     // g_VirtualScene[""] dentro da função BuildTrianglesAndAddToVirtualScene(), e veja
@@ -645,6 +655,15 @@ void LoadShadersFromFiles()
     view_uniform            = glGetUniformLocation(program_id, "view"); // Variável da matriz "view" em shader_vertex.glsl
     projection_uniform      = glGetUniformLocation(program_id, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
     object_id_uniform       = glGetUniformLocation(program_id, "object_id"); // Variável "object_id" em shader_fragment.glsl
+    bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
+    bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
+
+    // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
+    glUseProgram(program_id);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUseProgram(0);
 }
 
 // Função que pega a matriz M e guarda a mesma no topo da pilha
@@ -749,6 +768,12 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         size_t first_index = indices.size();
         size_t num_triangles = model->shapes[shape].mesh.num_face_vertices.size();
 
+        const float minval = std::numeric_limits<float>::min();
+        const float maxval = std::numeric_limits<float>::max();
+
+        glm::vec3 bbox_min = glm::vec3(maxval,maxval,maxval);
+        glm::vec3 bbox_max = glm::vec3(minval,minval,minval);
+
         for (size_t triangle = 0; triangle < num_triangles; ++triangle)
         {
             assert(model->shapes[shape].mesh.num_face_vertices[triangle] == 3);
@@ -767,6 +792,13 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                 model_coefficients.push_back( vy ); // Y
                 model_coefficients.push_back( vz ); // Z
                 model_coefficients.push_back( 1.0f ); // W
+
+                bbox_min.x = std::min(bbox_min.x, vx);
+                bbox_min.y = std::min(bbox_min.y, vy);
+                bbox_min.z = std::min(bbox_min.z, vz);
+                bbox_max.x = std::max(bbox_max.x, vx);
+                bbox_max.y = std::max(bbox_max.y, vy);
+                bbox_max.z = std::max(bbox_max.z, vz);
 
                 // Inspecionando o código da tinyobjloader, o aluno Bernardo
                 // Sulzbach (2017/1) apontou que a maneira correta de testar se
@@ -802,6 +834,9 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         theobject.num_indices    = last_index - first_index + 1; // Número de indices
         theobject.rendering_mode = GL_TRIANGLES;       // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
         theobject.vertex_array_object_id = vertex_array_object_id;
+
+        theobject.bbox_min = bbox_min;
+        theobject.bbox_max = bbox_max;
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
     }
