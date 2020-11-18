@@ -141,7 +141,6 @@ void ErrorCallback(int error, const char* description);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // My Functions
 void DrawEnviroment();
@@ -229,7 +228,7 @@ GLuint g_NumLoadedTextures = 0;
 
 // Estados da maquina
 glm::vec4 cameraTarget;
-int throwBunny = 0;
+float bunnyTimeAcc = 0;
 glm::vec4 throwBunnyVector;
 
 float timePrevious;
@@ -281,8 +280,6 @@ int main(int argc, char* argv[])
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
     // ... ou movimentar o cursor do mouse em cima da janela ...
     glfwSetCursorPosCallback(window, CursorPosCallback);
-    // ... ou rolar a "rodinha" do mouse.
-    glfwSetScrollCallback(window, ScrollCallback);
     //seta o input como mouse 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -367,7 +364,6 @@ int main(int argc, char* argv[])
         timeNow = (float)glfwGetTime();
         timeVariation = timeNow - timePrevious;
         timePrevious = timeNow;
-        std::cout << timeVariation << '\n';
         // Aqui executamos as operações de renderização
 
         // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é
@@ -409,8 +405,8 @@ int main(int argc, char* argv[])
         } else {
             // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
             // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-            glm::vec4 camera_position_c  = glm::vec4(x,y+12.0f,z,1.0f); // Ponto "c", centro da câmera
-            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,10.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+            glm::vec4 camera_position_c  = glm::vec4(x,y+15.0f,z,1.0f); // Ponto "c", centro da câmera
+            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,12.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
             glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
             glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
@@ -476,24 +472,29 @@ int main(int argc, char* argv[])
 
     
         // Desenhamos o modelo do coelho
-        if(throwBunny > 0){
-            model = Matrix_Translate(throwBunnyVector.x/10*throwBunny,throwBunnyVector.y/10*throwBunny, throwBunnyVector.z/10*throwBunny)
+        if(bunnyTimeAcc > 0){
+            float r = ((double) rand() / (RAND_MAX));
+            bunnyTimeAcc = bunnyTimeAcc + timeVariation*4;
+            float bunnyRollAcc = bunnyRollAcc + timeVariation*r*16;
+            model = Matrix_Translate(throwBunnyVector.x*bunnyTimeAcc,throwBunnyVector.y*bunnyTimeAcc, throwBunnyVector.z*bunnyTimeAcc)
                 * Matrix_Translate(cameraPos.x,cameraPos.y, cameraPos.z)
+                * Matrix_Rotate_Z(bunnyRollAcc)
+                * Matrix_Rotate_Y(bunnyRollAcc)
+                * Matrix_Rotate_X(bunnyRollAcc)
                 * Matrix_Scale(0.2, 0.2, 0.2);
             glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(object_id_uniform, BUNNY);
             DrawVirtualObject("bunny");
-            throwBunny = throwBunny+1;
         }
-        if(throwBunny == 200){
-            throwBunny = 0;
+        if(bunnyTimeAcc > 200){
+            bunnyTimeAcc = 0;
         }
 
         // Desenhamos o modelo da lua
         if(gameRunning){
-            model = Matrix_Translate(cameraPos.x+5.0f,10.0f,cameraPos.z+5.0f);
+            model = Matrix_Translate(cameraPos.x+5.0f,12.0f,cameraPos.z+5.0f);
         }else{
-            model = Matrix_Translate(0.0f,10.0f,0.0f);
+            model = Matrix_Translate(0.0f,12.0f,0.0f);
         }
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, MOON);
@@ -1259,23 +1260,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
 }
 
-// Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    // Atualizamos a distância da câmera para a origem utilizando a
-    // movimentação da "rodinha", simulando um ZOOM.
-    g_CameraDistance -= 0.1f*yoffset;
-
-    // Uma câmera look-at nunca pode estar exatamente "em cima" do ponto para
-    // onde ela está olhando, pois isto gera problemas de divisão por zero na
-    // definição do sistema de coordenadas da câmera. Isto é, a variável abaixo
-    // nunca pode ser zero. Versões anteriores deste código possuíam este bug,
-    // o qual foi detectado pelo aluno Vinicius Fraga (2017/2).
-    const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    if (g_CameraDistance < verysmallnumber)
-        g_CameraDistance = verysmallnumber;
-}
-
 // Definição da função que será chamada sempre que o usuário pressionar alguma
 // tecla do teclado. Veja http://www.glfw.org/docs/latest/input_guide.html#input_key
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
@@ -1292,41 +1276,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    // O código abaixo implementa a seguinte lógica:
-    //   Se apertar tecla X       então g_AngleX += delta;
-    //   Se apertar tecla shift+X então g_AngleX -= delta;
-    //   Se apertar tecla Y       então g_AngleY += delta;
-    //   Se apertar tecla shift+Y então g_AngleY -= delta;
-    //   Se apertar tecla Z       então g_AngleZ += delta;
-    //   Se apertar tecla shift+Z então g_AngleZ -= delta;
-
-    float delta = 3.141592 / 16; // 22.5 graus, em radianos.
-
-    if (key == GLFW_KEY_X && action == GLFW_PRESS)
-    {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-        g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-    if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-        g_AngleX = 0.0f;
-        g_AngleY = 0.0f;
-        g_AngleZ = 0.0f;
-        g_ForearmAngleX = 0.0f;
-        g_ForearmAngleZ = 0.0f;
-        g_TorsoPositionX = 0.0f;
-        g_TorsoPositionY = 0.0f;
-    }
 
     // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
@@ -1395,9 +1344,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     }
 
     //Bunny
-    if (key == GLFW_KEY_B && action == GLFW_PRESS)
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
     {
-        throwBunny = 1;
+        bunnyTimeAcc = 0.001;
         throwBunnyVector = cameraTarget;
     }
 

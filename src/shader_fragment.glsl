@@ -87,9 +87,9 @@ void main()
     if ( object_id == COW )
     {
         // Propriedades espectrais da vaca
-        Kd = vec3(0.4, 0.4, 0.4);
-        Ka = vec3(0.2, 0.2, 0.2);
-        q = 1.0;
+        Kd = vec3(0.6, 0.6, 0.6);
+        Ka = vec3(0.05,0.05,0.05);
+        q = 32.0;
 
         // Projeção planar
         float minx = bbox_min.x;
@@ -105,10 +105,10 @@ void main()
     else if ( object_id == BUNNY )
     {
         // Propriedades espectrais do coelho
-        // Kd = vec3(0.08, 0.4, 0.8);
-        // Ks = vec3(0.8, 0.8, 0.8);
-        // Ka = vec3(0.04, 0.2, 0.4);
-        q = 4.0;
+        Kd = vec3(0.6, 0.6, 0.6);
+        Ks = vec3(0.8, 0.8, 0.8);
+        Ka = vec3(0.05,0.05,0.05);
+        q = 32.0;
 
         //Projeção esférica
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
@@ -191,11 +191,11 @@ void main()
     {
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    color = CowTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
+    color = CowTexture*(simple_lambert+0.02);
     }
     else if ( object_id == BUNNY )
     {
-    color = FurTexture * (simple_lambert + 0.01);
+    color = lambert_diffuse_term + ambient_term + phong_specular_term;
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
     // color = FurTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
