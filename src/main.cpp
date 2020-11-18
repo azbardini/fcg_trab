@@ -292,8 +292,8 @@ int main(int argc, char* argv[])
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/grass.jpg");      // TextureImage0
-    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage1
-    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage2
+    LoadTextureImage("../../data/fur.jpg");      // TextureImage1
+    LoadTextureImage("../../data/cow.jpg"); // TextureImage2
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel cowModel("../../data/cow.obj");
@@ -447,15 +447,15 @@ int main(int argc, char* argv[])
         #define BUNNY  1
         #define PLANE  2
 
-
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f,0.0f,0.0f);
+        // Desenhamos o modelo da VACA
+        model = Matrix_Translate(0.0f,0.5f,0.0f)
+        * Matrix_Scale(2.0, 2.0, 2.0);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, COW);
         DrawVirtualObject("cow");
 
         // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f) 
+        model = Matrix_Translate(5.0f,0.0f,0.0f) 
               * Matrix_Rotate_Z(g_AngleZ) 
               * Matrix_Rotate_Y(g_AngleY) 
               * Matrix_Rotate_X(g_AngleX);

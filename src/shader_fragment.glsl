@@ -82,43 +82,12 @@ void main()
 
     if ( object_id == COW )
     {
-        // Propriedades espectrais da esfera
-        Kd = vec3(0.8, 0.4, 0.08);
-        Ka = vec3(0.4, 0.2, 0.04);
+        // Propriedades espectrais da vaca
+        Kd = vec3(0.4, 0.4, 0.4);
+        Ka = vec3(0.2, 0.2, 0.2);
         q = 1.0;
 
-
-        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-        float rho = 1.0;
-        P = position_model; 
-        C = bbox_center; 
-        
-        vec4 pLine = C + (rho * ((P-C)/length(P-C)));
-        vec4 pVect = pLine - C;
-
-        float phi = asin(pVect.y/rho);
-        float theta = atan(pVect.x, pVect.z);
-
-        V = (phi + M_PI_2) / M_PI;
-        U = (theta + M_PI) / (2 * M_PI);
-
-    }
-    else if ( object_id == BUNNY )
-    {
-        // Propriedades espectrais do coelho
-        Kd = vec3(0.08, 0.4, 0.8);
-        Ks = vec3(0.8, 0.8, 0.8);
-        Ka = vec3(0.04, 0.2, 0.4);
-        q = 32.0;
-
-        // As coordenadas de textura do coelho, computadas com
-        // projeção planar XY em COORDENADAS DO MODELO. Utilize como referência
-        // o slides 99-104 do documento Aula_20_Mapeamento_de_Texturas.pdf,
-        // e também use as variáveis min*/max* definidas abaixo para normalizar
-        // as coordenadas de textura U e V dentro do intervalo [0,1]. Para
-        // tanto, veja por exemplo o mapeamento da variável 'p_v' utilizando
-        // 'h' no slides 158-160 do documento Aula_20_Mapeamento_de_Texturas.pdf.
-        // Veja também a Questão 4 do Questionário 4 no Moodle.
+        // Projeção planar
         float minx = bbox_min.x;
         float maxx = bbox_max.x;
         float miny = bbox_min.y;
@@ -128,6 +97,26 @@ void main()
         P = position_model; 
         U = (P.x-minx)/(maxx-minx);
         V = (P.y-miny)/(maxy-miny);
+    }
+    else if ( object_id == BUNNY )
+    {
+        // Propriedades espectrais do coelho
+        // Kd = vec3(0.08, 0.4, 0.8);
+        // Ks = vec3(0.8, 0.8, 0.8);
+        // Ka = vec3(0.04, 0.2, 0.4);
+        q = 4.0;
+
+        //Projeção esférica 
+        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
+        float rho = 1.0;
+        P = position_model; 
+        C = bbox_center;         
+        vec4 pLine = C + (rho * ((P-C)/length(P-C)));
+        vec4 pVect = pLine - C;
+        float phi = asin(pVect.y/rho);
+        float theta = atan(pVect.x, pVect.z);
+        V = (phi + M_PI_2) / M_PI;
+        U = (theta + M_PI) / (2 * M_PI);
     }
     else if ( object_id == PLANE )
     {
@@ -142,13 +131,15 @@ void main()
     }
 
    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-    vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-    vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
-    vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
+    vec3 GrassTexture = texture(TextureImage0, vec2(U,V)).rgb;
+    vec3 FurTexture = texture(TextureImage1, vec2(U,V)).rgb;
+    vec3 CowTexture = texture(TextureImage2, vec2(U,V)).rgb;
     // Espectro da fonte de iluminação
     vec3 I = vec3(1.0,1.0,1.0); // o espectro da fonte de luz
     // Espectro da luz ambiente
     vec3 Ia = vec3(0.2, 0.2, 0.2); // o espectro da luz ambiente
+    // Equação de Iluminação simples
+    float simple_lambert = max(0,dot(n,l));
     // Termo difuso utilizando a lei dos cossenos de Lambert
     vec3 lambert_diffuse_term = Kd*I*max(0, dot(n,l)); // o termo difuso de Lambert
     // Termo ambiente
@@ -161,19 +152,20 @@ void main()
     {
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    color = Kd1*(lambert_diffuse_term + ambient_term + phong_specular_term);
+    color = CowTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     }
     else if ( object_id == BUNNY )
     {
+    color = FurTexture * (simple_lambert + 0.01);
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    color = Kd1*(lambert_diffuse_term + ambient_term + phong_specular_term);
+    // color = FurTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     }
     else if ( object_id == PLANE )
     {
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    color = Kd0*(lambert_diffuse_term + ambient_term + phong_specular_term);
+    color = GrassTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     }
 
         // Cor final com correção gamma, considerando monitor sRGB.
