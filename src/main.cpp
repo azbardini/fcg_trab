@@ -60,7 +60,7 @@
 #define PI 3.14159265359
 
 // Constantes
-const float CAMERA_SPEED = 0.01;
+const float CAMERA_SPEED = 0.02;
 
 // GLobais
 unsigned int isMovingForward = 0;
@@ -401,32 +401,7 @@ int main(int argc, char* argv[])
 
         glm::vec4 cameraUp =        crossproduct(cameraTarget,cameraRight);
 
-
-        glm::vec4 help = glm::vec4(0.0f,0.0f,0.0f,0.0f);
-
-
-        bool colisionFoward = false;
-        bool colisionBackward = false;
-        bool colisionRight = false;
-        bool colisionLeft = false;
-
-        help = cameraPos + (cameraOnEyesHeight * CAMERA_SPEED);
-        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
-            colisionFoward = true;
-        help = cameraPos - (cameraOnEyesHeight * CAMERA_SPEED);
-        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
-            colisionBackward = true;
-        help = cameraPos - (cameraRight * CAMERA_SPEED);
-        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
-            colisionRight = true;
-        help = cameraPos + (cameraRight * CAMERA_SPEED);
-        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
-            colisionLeft = true;
-
-        glm::vec4 newCameraPos = GetNewCameraPos(cameraPos, cameraOnEyesHeight, cameraRight);
-
-
-        cameraPos = newCameraPos;
+        cameraPos = GetNewCameraPos(cameraPos, cameraOnEyesHeight, cameraRight);
 
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
