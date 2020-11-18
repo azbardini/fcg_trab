@@ -22,7 +22,7 @@ uniform mat4 projection;
 #define COW 0
 #define BUNNY  1
 #define PLANE  2
-#define WALL1  3
+#define WALL  3
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -120,7 +120,7 @@ void main()
         V = (phi + M_PI_2) / M_PI;
         U = (theta + M_PI) / (2 * M_PI);
     }
-    else if ( object_id == PLANE || object_id == WALL1)
+    else if ( object_id == PLANE || object_id == WALL)
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
         U = texcoords.x;
@@ -169,7 +169,7 @@ void main()
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
     color = GrassTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     }
-    else if ( object_id == WALL1 )
+    else if ( object_id == WALL )
     {
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.

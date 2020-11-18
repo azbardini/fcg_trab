@@ -54,7 +54,7 @@
 #define COW 0
 #define BUNNY  1
 #define PLANE  2
-#define WALL1  3
+#define WALL  3
 #define WALL2  4
 #define WALL3  5
 #define WALL4  6
@@ -302,7 +302,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/grass.jpg");      // TextureImage0
     LoadTextureImage("../../data/fur.jpg");      // TextureImage1
     LoadTextureImage("../../data/cow.jpg"); // TextureImage2
-    LoadTextureImage("../../data/cerca.png"); // TextureImage3
+    LoadTextureImage("../../data/fence.jpg"); // TextureImage3
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel cowModel("../../data/cow.obj");
@@ -316,10 +316,6 @@ int main(int argc, char* argv[])
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
-
-    ObjModel wallmodel("../../data/wall.obj");
-    ComputeNormals(&wallmodel);
-    BuildTrianglesAndAddToVirtualScene(&wallmodel);
 
 
     if ( argc > 1 )
@@ -495,10 +491,34 @@ int main(int argc, char* argv[])
 
         model = Matrix_Scale(20.0f,1.0f,20.0f)
               * Matrix_Rotate_X(1.571)
-              * Matrix_Translate(0.0f,-1.0f,0.0f);
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL1);
-        DrawVirtualObject("wall1");
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
+
+        model = Matrix_Scale(20.0f,1.0f,20.0f)
+              * Matrix_Rotate_X(1.571)
+              * Matrix_Rotate_Z(1.571)
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
+
+        model = Matrix_Scale(20.0f,1.0f,20.0f)
+              * Matrix_Rotate_X(1.571)
+              * Matrix_Rotate_Z(3.14)
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
+
+        model = Matrix_Scale(20.0f,1.0f,20.0f)
+              * Matrix_Rotate_X(1.571)
+              * Matrix_Rotate_Z((3.14*3)/2)
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
         // passamos por todos os sistemas de coordenadas armazenados nas
@@ -676,7 +696,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), COW);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), BUNNY);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), PLANE);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), WALL1);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), WALL);
     glUseProgram(0);
 }
 
