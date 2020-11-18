@@ -22,6 +22,7 @@ uniform mat4 projection;
 #define COW 0
 #define BUNNY  1
 #define PLANE  2
+#define WALL1  3
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -32,6 +33,7 @@ uniform vec4 bbox_max;
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage3;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -68,7 +70,7 @@ void main()
     vec4 v = normalize(camera_position - p);
 
     // Vetor que define o sentido da reflexão especular ideal.
-    vec4 r = -l + 2*n*dot(n,l); 
+    vec4 r = -l + 2*n*dot(n,l);
 
     // Coordenadas de textura U e V
     float U = 0.0;
@@ -94,7 +96,7 @@ void main()
         float maxy = bbox_max.y;
         float minz = bbox_min.z;
         float maxz = bbox_max.z;
-        P = position_model; 
+        P = position_model;
         U = (P.x-minx)/(maxx-minx);
         V = (P.y-miny)/(maxy-miny);
     }
@@ -106,11 +108,11 @@ void main()
         // Ka = vec3(0.04, 0.2, 0.4);
         q = 4.0;
 
-        //Projeção esférica 
+        //Projeção esférica
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
         float rho = 1.0;
-        P = position_model; 
-        C = bbox_center;         
+        P = position_model;
+        C = bbox_center;
         vec4 pLine = C + (rho * ((P-C)/length(P-C)));
         vec4 pVect = pLine - C;
         float phi = asin(pVect.y/rho);
@@ -118,7 +120,7 @@ void main()
         V = (phi + M_PI_2) / M_PI;
         U = (theta + M_PI) / (2 * M_PI);
     }
-    else if ( object_id == PLANE )
+    else if ( object_id == PLANE || object_id == WALL1)
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
         U = texcoords.x;
@@ -134,6 +136,7 @@ void main()
     vec3 GrassTexture = texture(TextureImage0, vec2(U,V)).rgb;
     vec3 FurTexture = texture(TextureImage1, vec2(U,V)).rgb;
     vec3 CowTexture = texture(TextureImage2, vec2(U,V)).rgb;
+    vec3 FenceTexture = texture(TextureImage3, vec2(U,V)).rgb;
     // Espectro da fonte de iluminação
     vec3 I = vec3(1.0,1.0,1.0); // o espectro da fonte de luz
     // Espectro da luz ambiente
@@ -146,7 +149,6 @@ void main()
     vec3 ambient_term =  Ka*Ia;// o termo ambiente
     // Termo especular utilizando o modelo de iluminação de Phong
     vec3 phong_specular_term  = Ks*I*pow(max(0, dot(r,v)), q); // o termo especular de Phong
-
 
     if ( object_id == COW )
     {
@@ -167,10 +169,16 @@ void main()
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
     color = GrassTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     }
+    else if ( object_id == WALL1 )
+    {
+    // Cor final do fragmento calculada com uma combinação dos termos difuso,
+    // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
+    color = FenceTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
+    }
 
         // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
     color = pow(color, vec3(1.0,1.0,1.0)/2.2);
 
-} 
+}
 

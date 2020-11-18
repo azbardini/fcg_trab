@@ -51,14 +51,22 @@
 #include "utils.h"
 #include "matrices.h"
 
+#define COW 0
+#define BUNNY  1
+#define PLANE  2
+#define WALL1  3
+#define WALL2  4
+#define WALL3  5
+#define WALL4  6
+
 // Constantes
 const float CAMERA_SPEED = 0.02;
 
 // GLobais
-unsigned int isMovingForward = 0; 
-unsigned int isMovingBackward = 0; 
-unsigned int isMovingLeft = 0; 
-unsigned int isMovingRight = 0; 
+unsigned int isMovingForward = 0;
+unsigned int isMovingBackward = 0;
+unsigned int isMovingLeft = 0;
+unsigned int isMovingRight = 0;
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -82,7 +90,7 @@ struct ObjModel
 
         if (!ret)
             throw std::runtime_error("Erro ao carregar modelo.");
-        
+
         printf("OK.\n");
     }
 };
@@ -294,6 +302,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/grass.jpg");      // TextureImage0
     LoadTextureImage("../../data/fur.jpg");      // TextureImage1
     LoadTextureImage("../../data/cow.jpg"); // TextureImage2
+    LoadTextureImage("../../data/cerca.png"); // TextureImage3
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel cowModel("../../data/cow.obj");
@@ -307,6 +316,11 @@ int main(int argc, char* argv[])
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
+
+    ObjModel wallmodel("../../data/wall.obj");
+    ComputeNormals(&wallmodel);
+    BuildTrianglesAndAddToVirtualScene(&wallmodel);
+
 
     if ( argc > 1 )
     {
@@ -334,7 +348,7 @@ int main(int argc, char* argv[])
     float timePrevious;
     float timeNow;
     float timeVariation;
-    
+
     timePrevious = (float)glfwGetTime();
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -387,19 +401,14 @@ int main(int argc, char* argv[])
 
         glm::vec4 cameraUp =        crossproduct(cameraTarget,cameraRight);
 
-        if(isMovingForward)     
+        if(isMovingForward)
             cameraPos = cameraPos + (cameraOnEyesHeight * CAMERA_SPEED);
-        if(isMovingBackward)    
+        if(isMovingBackward)
             cameraPos = cameraPos - (cameraOnEyesHeight * CAMERA_SPEED);
-        if(isMovingRight)       
+        if(isMovingRight)
             cameraPos = cameraPos - (cameraRight * CAMERA_SPEED);
-        if(isMovingLeft)        
+        if(isMovingLeft)
             cameraPos = cameraPos + (cameraRight * CAMERA_SPEED);
-
-        std::cout << (cameraOnEyesHeight * CAMERA_SPEED).x <<' ' << (cameraOnEyesHeight * CAMERA_SPEED).y<<' ' << (cameraOnEyesHeight * CAMERA_SPEED).z<<' ' << std::endl;
-        std::cout << CAMERA_SPEED<<' ' << std::endl;
-        std::cout << cameraPos.x <<' ' << cameraPos.y<<' ' << cameraPos.z<<' ' << std::endl;
-        std::cout << cosAngle(cameraTarget, genericUp)<<' ' << std::endl;
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
@@ -412,7 +421,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -20.0f; // Posição do "far plane"
+        float farplane  = -400.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -443,10 +452,6 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define COW 0
-        #define BUNNY  1
-        #define PLANE  2
-
         // Desenhamos o modelo da VACA
         model = Matrix_Translate(0.0f,0.5f,0.0f)
         * Matrix_Scale(2.0, 2.0, 2.0);
@@ -455,9 +460,9 @@ int main(int argc, char* argv[])
         DrawVirtualObject("cow");
 
         // Desenhamos o modelo do coelho
-        model = Matrix_Translate(5.0f,0.0f,0.0f) 
-              * Matrix_Rotate_Z(g_AngleZ) 
-              * Matrix_Rotate_Y(g_AngleY) 
+        model = Matrix_Translate(5.0f,0.0f,0.0f)
+              * Matrix_Rotate_Z(g_AngleZ)
+              * Matrix_Rotate_Y(g_AngleY)
               * Matrix_Rotate_X(g_AngleX);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, BUNNY);
@@ -481,11 +486,19 @@ int main(int argc, char* argv[])
         }
 
         // Desenhamos o modelo do plano
-        model = Matrix_Translate(0.0f,-1.0f,0.0f) 
+        model = Matrix_Translate(0.0f,-1.0f,0.0f)
               * Matrix_Scale(20.0f,1.0f,20.0f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, PLANE);
         DrawVirtualObject("plane");
+
+
+        model = Matrix_Scale(20.0f,1.0f,20.0f)
+              * Matrix_Rotate_X(1.571)
+              * Matrix_Translate(0.0f,-1.0f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL1);
+        DrawVirtualObject("wall1");
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
         // passamos por todos os sistemas de coordenadas armazenados nas
@@ -660,9 +673,10 @@ void LoadShadersFromFiles()
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(program_id);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
-    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), COW);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), BUNNY);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), PLANE);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), WALL1);
     glUseProgram(0);
 }
 
@@ -1036,7 +1050,7 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
         fprintf(stderr, "%s", output.c_str());
     }
 
-    // Os "Shader Objects" podem ser marcados para deleção após serem linkados 
+    // Os "Shader Objects" podem ser marcados para deleção após serem linkados
     glDeleteShader(vertex_shader_id);
     glDeleteShader(fragment_shader_id);
 
@@ -1138,21 +1152,21 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-    
+
         // Atualizamos parâmetros da câmera com os deslocamentos
         g_CameraTheta -= 0.01f*dx;
         g_CameraPhi   -= 0.01f*dy;
-    
+
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
         float phimax = 3.141592f/2;
         float phimin = -phimax;
-    
+
         if (g_CameraPhi > phimax)
             g_CameraPhi = phimax;
-    
+
         if (g_CameraPhi < phimin)
             g_CameraPhi = phimin;
-    
+
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -1164,11 +1178,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-    
+
         // Atualizamos parâmetros da antebraço com os deslocamentos
         g_ForearmAngleZ -= 0.01f*dx;
         g_ForearmAngleX += 0.01f*dy;
-    
+
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -1180,11 +1194,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-    
+
         // Atualizamos parâmetros da antebraço com os deslocamentos
         g_TorsoPositionX += 0.01f*dx;
         g_TorsoPositionY -= 0.01f*dy;
-    
+
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -1459,7 +1473,7 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     if ( ellapsed_seconds > 1.0f )
     {
         numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
-    
+
         old_seconds = seconds;
         ellapsed_frames = 0;
     }
