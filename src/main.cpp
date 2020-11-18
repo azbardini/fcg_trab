@@ -55,9 +55,6 @@
 #define BUNNY  1
 #define PLANE  2
 #define WALL  3
-#define WALL2  4
-#define WALL3  5
-#define WALL4  6
 
 // Constantes
 const float CAMERA_SPEED = 0.02;
