@@ -55,9 +55,12 @@
 #define BUNNY  1
 #define PLANE  2
 #define WALL  3
+#define PLANE_SIZE_X 20.0f
+#define PLANE_SIZE_Z 20.0f
+#define PI 3.14159265359
 
 // Constantes
-const float CAMERA_SPEED = 0.02;
+const float CAMERA_SPEED = 0.01;
 
 // GLobais
 unsigned int isMovingForward = 0;
@@ -137,6 +140,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+// My Functions
+void DrawEnviroment();
+glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -394,14 +401,33 @@ int main(int argc, char* argv[])
 
         glm::vec4 cameraUp =        crossproduct(cameraTarget,cameraRight);
 
-        if(isMovingForward)
-            cameraPos = cameraPos + (cameraOnEyesHeight * CAMERA_SPEED);
-        if(isMovingBackward)
-            cameraPos = cameraPos - (cameraOnEyesHeight * CAMERA_SPEED);
-        if(isMovingRight)
-            cameraPos = cameraPos - (cameraRight * CAMERA_SPEED);
-        if(isMovingLeft)
-            cameraPos = cameraPos + (cameraRight * CAMERA_SPEED);
+
+        glm::vec4 help = glm::vec4(0.0f,0.0f,0.0f,0.0f);
+
+
+        bool colisionFoward = false;
+        bool colisionBackward = false;
+        bool colisionRight = false;
+        bool colisionLeft = false;
+
+        help = cameraPos + (cameraOnEyesHeight * CAMERA_SPEED);
+        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
+            colisionFoward = true;
+        help = cameraPos - (cameraOnEyesHeight * CAMERA_SPEED);
+        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
+            colisionBackward = true;
+        help = cameraPos - (cameraRight * CAMERA_SPEED);
+        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
+            colisionRight = true;
+        help = cameraPos + (cameraRight * CAMERA_SPEED);
+        if(help.x<-19 || help.x >19 || help.z<-19 || help.z>19)
+            colisionLeft = true;
+
+        glm::vec4 newCameraPos = GetNewCameraPos(cameraPos, cameraOnEyesHeight, cameraRight);
+
+
+        cameraPos = newCameraPos;
+
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
@@ -420,7 +446,7 @@ int main(int argc, char* argv[])
         {
             // Projeção Perspectiva.
             // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
-            float field_of_view = 3.141592 / 3.0f;
+            float field_of_view = PI / 3.0f;
             projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
         }
         else
@@ -478,44 +504,7 @@ int main(int argc, char* argv[])
             throwBunny = 0;
         }
 
-        // Desenhamos o modelo do plano
-        model = Matrix_Translate(0.0f,-1.0f,0.0f)
-              * Matrix_Scale(20.0f,1.0f,20.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, PLANE);
-        DrawVirtualObject("plane");
-
-
-        model = Matrix_Scale(20.0f,1.0f,20.0f)
-              * Matrix_Rotate_X(1.571)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
-
-        model = Matrix_Scale(20.0f,1.0f,20.0f)
-              * Matrix_Rotate_X(1.571)
-              * Matrix_Rotate_Z(1.571)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
-
-        model = Matrix_Scale(20.0f,1.0f,20.0f)
-              * Matrix_Rotate_X(1.571)
-              * Matrix_Rotate_Z(3.14)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
-
-        model = Matrix_Scale(20.0f,1.0f,20.0f)
-              * Matrix_Rotate_X(1.571)
-              * Matrix_Rotate_Z((3.14*3)/2)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
+        DrawEnviroment();
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
         // passamos por todos os sistemas de coordenadas armazenados nas
@@ -555,6 +544,80 @@ int main(int argc, char* argv[])
 
     // Fim do programa
     return 0;
+}
+
+glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight)
+{
+    glm::vec4 newCameraPos = cameraPos;
+
+    float newX;
+    float newZ;
+
+    if(isMovingForward){
+        newCameraPos = cameraPos + (cameraOnEyesHeight * CAMERA_SPEED);
+        if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
+            newX = cameraPos.x;
+        else
+            newX = newCameraPos.x;
+
+        if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
+            newZ = cameraPos.z;
+        else
+            newZ = newCameraPos.z;
+
+        newCameraPos.x = newX;
+        newCameraPos.z = newZ;
+    }
+
+    if(isMovingBackward){
+        newCameraPos = cameraPos - (cameraOnEyesHeight * CAMERA_SPEED);
+        if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
+            newX = cameraPos.x;
+        else
+            newX = newCameraPos.x;
+
+        if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
+            newZ = cameraPos.z;
+        else
+            newZ = newCameraPos.z;
+
+        newCameraPos.x = newX;
+        newCameraPos.z = newZ;
+    }
+
+    if(isMovingRight){
+        newCameraPos = cameraPos - (cameraRight * CAMERA_SPEED);
+        if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
+            newX = cameraPos.x;
+        else
+            newX = newCameraPos.x;
+
+        if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
+            newZ = cameraPos.z;
+        else
+            newZ = newCameraPos.z;
+
+        newCameraPos.x = newX;
+        newCameraPos.z = newZ;
+    }
+
+    if(isMovingLeft){
+        newCameraPos = cameraPos + (cameraRight * CAMERA_SPEED);
+        if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
+            newX = cameraPos.x;
+        else
+            newX = newCameraPos.x;
+
+        if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
+            newZ = cameraPos.z;
+        else
+            newZ = newCameraPos.z;
+
+        newCameraPos.x = newX;
+        newCameraPos.z = newZ;
+    }
+
+    return newCameraPos;
 }
 
 
@@ -1500,6 +1563,49 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 
     TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
 }
+
+void DrawEnviroment()
+{
+    glm::mat4 model = Matrix_Identity();
+    model = Matrix_Translate(0.0f,-1.0f,0.0f)
+              * Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, PLANE);
+        DrawVirtualObject("plane");
+
+        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+              * Matrix_Rotate_X(PI/2)
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
+
+        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+              * Matrix_Rotate_X(PI/2)
+              * Matrix_Rotate_Z(PI/2)
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
+
+        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+              * Matrix_Rotate_X(PI/2)
+              * Matrix_Rotate_Z(PI)
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
+
+        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+              * Matrix_Rotate_X(PI/2)
+              * Matrix_Rotate_Z((PI*3)/2)
+              * Matrix_Translate(0.0f,-0.99f,0.0f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, WALL);
+        DrawVirtualObject("plane");
+}
+
+
 
 // Função para debugging: imprime no terminal todas informações de um modelo
 // geométrico carregado de um arquivo ".obj".
