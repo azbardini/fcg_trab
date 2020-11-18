@@ -19,10 +19,11 @@ uniform mat4 view;
 uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
-#define COW 0
-#define BUNNY  1
-#define PLANE  2
-#define WALL  3
+#define COW     0
+#define BUNNY   1
+#define PLANE   2
+#define WALL1   3
+#define MOON    4
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -30,10 +31,11 @@ uniform vec4 bbox_min;
 uniform vec4 bbox_max;
 
 // Variáveis para acesso das imagens de textura
-uniform sampler2D TextureImage0;
-uniform sampler2D TextureImage1;
-uniform sampler2D TextureImage2;
-uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage0; //COW
+uniform sampler2D TextureImage1; //BUNNY
+uniform sampler2D TextureImage2; //PLANE
+uniform sampler2D TextureImage3; //WALL
+uniform sampler2D TextureImage4; //MOON
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -64,7 +66,7 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(vec4(1.0,1.0,0.5,0.0));
+    vec4 l = normalize(vec4(0.0,1.0,0.0,0.0));
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
@@ -120,16 +122,50 @@ void main()
         V = (phi + M_PI_2) / M_PI;
         U = (theta + M_PI) / (2 * M_PI);
     }
-    else if ( object_id == PLANE || object_id == WALL)
+    else if ( object_id == PLANE )
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
-        U = texcoords.x;
+        U = texcoords.x*8;
+        V = texcoords.y*8;
+
+       // Propriedades espectrais do plano
+        Kd = vec3(0.2, 0.2, 0.2);
+        Ks = vec3(0.3, 0.3, 0.3);
+        Ka = vec3(0.2,0.2,0.2); // Refletância ambiente
+        q = 10.0;
+    }
+    else if ( object_id == WALL1)
+    {
+        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        U = texcoords.x*16;
         V = texcoords.y;
 
        // Propriedades espectrais do plano
         Kd = vec3(0.2, 0.2, 0.2);
         Ks = vec3(0.3, 0.3, 0.3);
+        Ka = vec3(0.2,0.2,0.2); // Refletância ambiente
         q = 10.0;
+    }
+    else if ( object_id == MOON)
+    {
+       // Propriedades espectrais do plano
+        Kd = vec3(0.8, 0.8, 0.8);
+        Ks = vec3(0.8, 0.8, 0.8);
+        Ka = vec3(1.0,1.0,1.0); // Refletância ambiente
+        q = 10.0;
+
+          //Projeção esférica
+        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
+        float rho = 1.0;
+        P = position_model;
+        C = bbox_center;
+        vec4 pLine = C + (rho * ((P-C)/length(P-C)));
+        vec4 pVect = pLine - C;
+        float phi = asin(pVect.y/rho);
+        float theta = atan(pVect.x, pVect.z);
+        V = (phi + M_PI_2) / M_PI;
+        U = (theta + M_PI) / (2 * M_PI);
+
     }
 
    // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
@@ -137,6 +173,7 @@ void main()
     vec3 FurTexture = texture(TextureImage1, vec2(U,V)).rgb;
     vec3 CowTexture = texture(TextureImage2, vec2(U,V)).rgb;
     vec3 FenceTexture = texture(TextureImage3, vec2(U,V)).rgb;
+    vec3 MoonTexture = texture(TextureImage4, vec2(U,V)).rgb;
     // Espectro da fonte de iluminação
     vec3 I = vec3(1.0,1.0,1.0); // o espectro da fonte de luz
     // Espectro da luz ambiente
@@ -169,12 +206,18 @@ void main()
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
     color = GrassTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     }
-    else if ( object_id == WALL )
+    else if ( object_id == WALL1 )
     {
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
     color = FenceTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     }
+    else if ( object_id == MOON )
+    {
+    // Cor final do fragmento calculada com uma combinação dos termos difuso,
+    // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
+    color = MoonTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
+   }
 
         // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

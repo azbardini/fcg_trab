@@ -51,10 +51,12 @@
 #include "utils.h"
 #include "matrices.h"
 
-#define COW 0
-#define BUNNY  1
-#define PLANE  2
-#define WALL  3
+#define COW     0
+#define BUNNY   1
+#define PLANE   2
+#define WALL    3
+#define MOON    4
+
 #define PLANE_SIZE_X 20.0f
 #define PLANE_SIZE_Z 20.0f
 #define PI 3.14159265359
@@ -143,6 +145,7 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // My Functions
 void DrawEnviroment();
+void printStartGame(GLFWwindow* window);
 glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
@@ -232,6 +235,7 @@ glm::vec4 throwBunnyVector;
 float timePrevious;
 float timeNow;
 float timeVariation;
+bool gameRunning = false;
 
 int main(int argc, char* argv[])
 {
@@ -314,6 +318,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/fur.jpg");      // TextureImage1
     LoadTextureImage("../../data/cow.jpg"); // TextureImage2
     LoadTextureImage("../../data/fence.jpg"); // TextureImage3
+    LoadTextureImage("../../data/moon.jpg"); // TextureImage3
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel cowModel("../../data/cow.obj");
@@ -328,6 +333,9 @@ int main(int argc, char* argv[])
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
 
+    ObjModel spheremodel("../../data/sphere.obj");
+    ComputeNormals(&spheremodel);
+    BuildTrianglesAndAddToVirtualScene(&spheremodel);
 
     if ( argc > 1 )
     {
@@ -359,6 +367,7 @@ int main(int argc, char* argv[])
         timeNow = (float)glfwGetTime();
         timeVariation = timeNow - timePrevious;
         timePrevious = timeNow;
+        std::cout << timeVariation << '\n';
         // Aqui executamos as operações de renderização
 
         // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é
@@ -367,7 +376,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
         //
         //           R     G     B     A
-        glClearColor(0.3f, 0.5f, 1.0f, 0.5f);
+        glClearColor(0.0f, 0.0f, 0.2f, 0.0f);
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -386,31 +395,29 @@ int main(int argc, char* argv[])
         float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
         float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
 
-        // // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        // glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f); // Ponto "c", centro da câmera
-        // glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        // glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
-        // glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+        glm::mat4 view;
+        if(gameRunning){
+            cameraTarget =    glm::vec4(x,y,z,0.0f);
+            glm::vec4 cameraOnEyesHeight =    glm::vec4(x,0.0f,z,0.0f);
+            glm::vec4 genericUp =       glm::vec4(0.0f, 1.0f ,0.0f ,0.0f);
+            glm::vec4 cameraRight =     crossproduct(genericUp,cameraTarget);
+            glm::vec4 cameraUp =        crossproduct(cameraTarget,cameraRight);
+            cameraPos = GetNewCameraPos(cameraPos, cameraOnEyesHeight, cameraRight);
+            // Computamos a matriz "View" utilizando os parâmetros da câmera para
+            // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+            view = Matrix_Camera_View(cameraPos, cameraTarget, cameraUp);
+        } else {
+            // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
+            // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+            glm::vec4 camera_position_c  = glm::vec4(x,y+12.0f,z,1.0f); // Ponto "c", centro da câmera
+            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,10.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+            glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
+            glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
-        // // Computamos a matriz "View" utilizando os parâmetros da câmera para
-        // // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        // glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
-        cameraTarget =    glm::vec4(x,y,z,0.0f);
-        glm::vec4 cameraOnEyesHeight =    glm::vec4(x,0.0f,z,0.0f);
-
-        glm::vec4 genericUp =       glm::vec4(0.0f, 1.0f ,0.0f ,0.0f);
-        glm::vec4 cameraRight =     crossproduct(genericUp,cameraTarget);
-
-        glm::vec4 cameraUp =        crossproduct(cameraTarget,cameraRight);
-
-        cameraPos = GetNewCameraPos(cameraPos, cameraOnEyesHeight, cameraRight);
-
-
-        // Computamos a matriz "View" utilizando os parâmetros da câmera para
-        // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::mat4 view = Matrix_Camera_View(cameraPos, cameraTarget, cameraUp);
-
+            // Computamos a matriz "View" utilizando os parâmetros da câmera para
+            // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+            view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        } 
 
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
@@ -442,20 +449,22 @@ int main(int argc, char* argv[])
         }
 
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
+        glm::mat4 modelToPrint = Matrix_Identity(); // Transformação identidade de modelagem
 
         // Enviamos as matrizes "view" e "projection" para a placa de vídeo
         // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
         // efetivamente aplicadas em todos os pontos.
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
-
+        
         // Desenhamos o modelo da VACA
-        model = Matrix_Translate(0.0f,0.5f,0.0f)
-        * Matrix_Scale(2.0, 2.0, 2.0);
+        model = Matrix_Translate(0.0f,0.2f,0.0f)
+        * Matrix_Scale(2.0, 2.0, 2.0)
+        * Matrix_Rotate_Y(cameraTarget.x*PI);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, COW);
         DrawVirtualObject("cow");
-
+    
         // Desenhamos o modelo do coelho
         model = Matrix_Translate(5.0f,0.0f,0.0f)
               * Matrix_Rotate_Z(g_AngleZ)
@@ -465,13 +474,11 @@ int main(int argc, char* argv[])
         glUniform1i(object_id_uniform, BUNNY);
         DrawVirtualObject("bunny");
 
+    
         // Desenhamos o modelo do coelho
         if(throwBunny > 0){
             model = Matrix_Translate(throwBunnyVector.x/10*throwBunny,throwBunnyVector.y/10*throwBunny, throwBunnyVector.z/10*throwBunny)
                 * Matrix_Translate(cameraPos.x,cameraPos.y, cameraPos.z)
-                * Matrix_Rotate_Z(g_AngleZ*throwBunny)
-                * Matrix_Rotate_Y(g_AngleY*throwBunny)
-                * Matrix_Rotate_X(g_AngleX*throwBunny)
                 * Matrix_Scale(0.2, 0.2, 0.2);
             glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(object_id_uniform, BUNNY);
@@ -482,6 +489,17 @@ int main(int argc, char* argv[])
             throwBunny = 0;
         }
 
+        // Desenhamos o modelo da lua
+        if(gameRunning){
+            model = Matrix_Translate(cameraPos.x+5.0f,10.0f,cameraPos.z+5.0f);
+        }else{
+            model = Matrix_Translate(0.0f,10.0f,0.0f);
+        }
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, MOON);
+        DrawVirtualObject("sphere");
+
+
         DrawEnviroment();
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
@@ -490,6 +508,9 @@ int main(int argc, char* argv[])
         // as matrizes e pontos resultantes dessas transformações.
         //glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
         //TextRendering_ShowModelViewProjection(window, projection, view, model, p_model);
+
+        //Chama o print de começo de jogo
+        printStartGame(window);
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -532,7 +553,7 @@ glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm
     float newZ;
 
     if(isMovingForward){
-        newCameraPos = cameraPos + (cameraOnEyesHeight * CAMERA_SPEED);
+        newCameraPos = cameraPos + (cameraOnEyesHeight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
             newX = cameraPos.x;
         else
@@ -548,7 +569,7 @@ glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm
     }
 
     if(isMovingBackward){
-        newCameraPos = cameraPos - (cameraOnEyesHeight * CAMERA_SPEED);
+        newCameraPos = cameraPos - (cameraOnEyesHeight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
             newX = cameraPos.x;
         else
@@ -564,7 +585,7 @@ glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm
     }
 
     if(isMovingRight){
-        newCameraPos = cameraPos - (cameraRight * CAMERA_SPEED);
+        newCameraPos = cameraPos - (cameraRight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
             newX = cameraPos.x;
         else
@@ -580,7 +601,7 @@ glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm
     }
 
     if(isMovingLeft){
-        newCameraPos = cameraPos + (cameraRight * CAMERA_SPEED);
+        newCameraPos = cameraPos + (cameraRight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
             newX = cameraPos.x;
         else
@@ -626,8 +647,8 @@ void LoadTextureImage(const char* filename)
     glGenSamplers(1, &sampler_id);
 
     // Veja slides 95-96 do documento Aula_20_Mapeamento_de_Texturas.pdf
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     // Parâmetros de amostragem da textura.
     glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -735,6 +756,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), BUNNY);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), PLANE);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), WALL);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage4"), MOON);
     glUseProgram(0);
 }
 
@@ -1332,7 +1354,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         fflush(stdout);
     }
 
-        //Forward
+    //Forward
     if (key == GLFW_KEY_W && action == GLFW_PRESS)
     {
         isMovingForward = 1;
@@ -1377,6 +1399,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     {
         throwBunny = 1;
         throwBunnyVector = cameraTarget;
+    }
+
+    //Game Run
+    if (key == GLFW_KEY_G && action == GLFW_PRESS)
+    {
+        gameRunning = true;
     }
 
 }
@@ -1451,6 +1479,24 @@ void TextRendering_ShowModelViewProjection(
 
 // Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
 // g_AngleX, g_AngleY, e g_AngleZ.
+
+     
+void printStartGame(GLFWwindow* window)
+{
+    if ( gameRunning )
+        return;
+
+    float pad = TextRendering_LineHeight(window);
+    char bufferTitle[80];
+    char bufferInstruction[80];
+    snprintf(bufferTitle, 80, "Bunny them All!");
+    snprintf(bufferInstruction, 80, "Pressione G para Jogar");
+    
+    TextRendering_PrintString(window, bufferTitle, -0.5 + pad/2, -12*pad, 3.2f);
+    TextRendering_PrintString(window, bufferInstruction, -0.45 + pad/2, -15*pad, 2.0f);
+}
+
+
 void TextRendering_ShowEulerAngles(GLFWwindow* window)
 {
     if ( !g_ShowInfoText )
@@ -1519,44 +1565,43 @@ void DrawEnviroment()
 {
     glm::mat4 model = Matrix_Identity();
     model = Matrix_Translate(0.0f,-1.0f,0.0f)
-              * Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, PLANE);
-        DrawVirtualObject("plane");
+            * Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z);
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, PLANE);
+    DrawVirtualObject("plane");
 
-        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
-              * Matrix_Rotate_X(PI/2)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
+    model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+            * Matrix_Rotate_X(PI/2)
+            * Matrix_Translate(0.0f,-0.99f,0.0f);
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, WALL);
+    DrawVirtualObject("plane");
 
-        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
-              * Matrix_Rotate_X(PI/2)
-              * Matrix_Rotate_Z(PI/2)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
+    model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+            * Matrix_Rotate_X(PI/2)
+            * Matrix_Rotate_Z(PI/2)
+            * Matrix_Translate(0.0f,-0.99f,0.0f);
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, WALL);
+    DrawVirtualObject("plane");
 
-        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
-              * Matrix_Rotate_X(PI/2)
-              * Matrix_Rotate_Z(PI)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
+    model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+            * Matrix_Rotate_X(PI/2)
+            * Matrix_Rotate_Z(PI)
+            * Matrix_Translate(0.0f,-0.99f,0.0f);
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, WALL);
+    DrawVirtualObject("plane");
 
-        model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
-              * Matrix_Rotate_X(PI/2)
-              * Matrix_Rotate_Z((PI*3)/2)
-              * Matrix_Translate(0.0f,-0.99f,0.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, WALL);
-        DrawVirtualObject("plane");
+    model = Matrix_Scale(PLANE_SIZE_X,1.0f,PLANE_SIZE_Z)
+            * Matrix_Rotate_X(PI/2)
+            * Matrix_Rotate_Z((PI*3)/2)
+            * Matrix_Translate(0.0f,-0.99f,0.0f);
+    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+    glUniform1i(object_id_uniform, WALL);
+    DrawVirtualObject("plane");
+
 }
-
-
 
 // Função para debugging: imprime no terminal todas informações de um modelo
 // geométrico carregado de um arquivo ".obj".
