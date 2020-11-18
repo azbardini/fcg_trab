@@ -549,67 +549,71 @@ int main(int argc, char* argv[])
 glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight)
 {
     glm::vec4 newCameraPos = cameraPos;
+    glm::vec4 auxCameraPos = cameraPos;
 
     float newX;
     float newZ;
 
     if(isMovingForward){
-        newCameraPos = cameraPos + (cameraOnEyesHeight * timeVariation);
+        newCameraPos = newCameraPos + (cameraOnEyesHeight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
-            newX = cameraPos.x;
+            newX = auxCameraPos.x;
         else
             newX = newCameraPos.x;
 
         if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
-            newZ = cameraPos.z;
+            newZ = auxCameraPos.z;
         else
             newZ = newCameraPos.z;
 
         newCameraPos.x = newX;
         newCameraPos.z = newZ;
+        auxCameraPos = newCameraPos;
     }
 
     if(isMovingBackward){
-        newCameraPos = cameraPos - (cameraOnEyesHeight * timeVariation);
+        newCameraPos = newCameraPos - (cameraOnEyesHeight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
-            newX = cameraPos.x;
+            newX = auxCameraPos.x;
         else
             newX = newCameraPos.x;
 
         if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
-            newZ = cameraPos.z;
+            newZ = auxCameraPos.z;
         else
             newZ = newCameraPos.z;
 
         newCameraPos.x = newX;
         newCameraPos.z = newZ;
+        auxCameraPos = newCameraPos;
     }
 
     if(isMovingRight){
-        newCameraPos = cameraPos - (cameraRight * timeVariation);
+        newCameraPos = newCameraPos - (cameraRight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
-            newX = cameraPos.x;
+            newX = auxCameraPos.x;
         else
             newX = newCameraPos.x;
 
         if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
-            newZ = cameraPos.z;
+            newZ = auxCameraPos.z;
         else
             newZ = newCameraPos.z;
 
         newCameraPos.x = newX;
         newCameraPos.z = newZ;
+        auxCameraPos = newCameraPos;
     }
 
     if(isMovingLeft){
-        newCameraPos = cameraPos + (cameraRight * timeVariation);
+        newCameraPos = newCameraPos + (cameraRight * timeVariation);
         if(newCameraPos.x< -PLANE_SIZE_X+1 || newCameraPos.x > PLANE_SIZE_Z -1)
-            newX = cameraPos.x;
+            newX = auxCameraPos.x;
         else
             newX = newCameraPos.x;
 
         if(newCameraPos.z<-PLANE_SIZE_X +1 || newCameraPos.z>PLANE_SIZE_Z-1)
-            newZ = cameraPos.z;
+            newZ = auxCameraPos.z;
         else
             newZ = newCameraPos.z;
 
