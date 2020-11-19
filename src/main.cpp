@@ -50,6 +50,7 @@
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
+#include "animals.cpp"
 
 #define COW     0
 #define BUNNY   1
@@ -96,7 +97,6 @@ struct ObjModel
         printf("OK.\n");
     }
 };
-
 
 // Declaração de funções utilizadas para pilha de matrizes de modelagem.
 void PushMatrix(glm::mat4 M);
@@ -280,7 +280,7 @@ int main(int argc, char* argv[])
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
     // ... ou movimentar o cursor do mouse em cima da janela ...
     glfwSetCursorPosCallback(window, CursorPosCallback);
-    //seta o input como mouse 
+    //seta o input como mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 
@@ -357,6 +357,9 @@ int main(int argc, char* argv[])
     glm::mat4 the_model;
     glm::mat4 the_view;
 
+    vec3 firstPosCow  = vec3(0.0f, 0.2f, 0.0f);
+    Animal myCow = Animal(1, firstPosCow);
+
     timePrevious = (float)glfwGetTime();
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -413,7 +416,7 @@ int main(int argc, char* argv[])
             // Computamos a matriz "View" utilizando os parâmetros da câmera para
             // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
             view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
-        } 
+        }
 
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
@@ -452,15 +455,16 @@ int main(int argc, char* argv[])
         // efetivamente aplicadas em todos os pontos.
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
-        
+
+        myCow.position.x = myCow.position.x + 0.001;
         // Desenhamos o modelo da VACA
-        model = Matrix_Translate(0.0f,0.2f,0.0f)
+        model = Matrix_Translate(myCow.position.x, myCow.position.y,myCow.position.y)
         * Matrix_Scale(2.0, 2.0, 2.0)
         * Matrix_Rotate_Y(cameraTarget.x*PI);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, COW);
         DrawVirtualObject("cow");
-    
+
         // Desenhamos o modelo do coelho
         model = Matrix_Translate(5.0f,0.0f,0.0f)
               * Matrix_Rotate_Z(g_AngleZ)
@@ -470,7 +474,7 @@ int main(int argc, char* argv[])
         glUniform1i(object_id_uniform, BUNNY);
         DrawVirtualObject("bunny");
 
-    
+
         // Desenhamos o modelo do coelho
         if(bunnyTimeAcc > 0){
             float r = ((double) rand() / (RAND_MAX));
@@ -1259,7 +1263,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // Atualizamos as variáveis globais para armazenar a posição atual do
     // cursor como sendo a última posição conhecida do cursor.
     g_LastCursorPosX = xpos;
-    g_LastCursorPosY = ypos;    
+    g_LastCursorPosY = ypos;
     cursorPosChanged = true;
 
 }
@@ -1433,7 +1437,7 @@ void TextRendering_ShowModelViewProjection(
 // Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
 // g_AngleX, g_AngleY, e g_AngleZ.
 
-     
+
 void printStartGame(GLFWwindow* window)
 {
     if ( gameRunning )
@@ -1444,7 +1448,7 @@ void printStartGame(GLFWwindow* window)
     char bufferInstruction[80];
     snprintf(bufferTitle, 80, "Bunny them All!");
     snprintf(bufferInstruction, 80, "Pressione G para Jogar");
-    
+
     TextRendering_PrintString(window, bufferTitle, -0.5 + pad/2, -12*pad, 3.2f);
     TextRendering_PrintString(window, bufferInstruction, -0.45 + pad/2, -15*pad, 2.0f);
 }

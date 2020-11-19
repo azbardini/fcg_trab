@@ -1,0 +1,18 @@
+#include <glm/mat4x4.hpp>
+#include <glm/vec4.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#ifndef _animals_hpp
+#define _animals_hpp
+
+using namespace glm;
+
+class Animal{
+    int id;
+    float width, height, depth;
+public:
+    vec3 position;
+    Animal(int id, vec3 position);
+};
+
+#endif // _animals_hpp
