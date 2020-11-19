@@ -57,11 +57,13 @@
 #include <array>
 #include <random>
 
-#define COW     0
-#define BUNNY   1
-#define PLANE   2
-#define WALL    3
-#define MOON    4
+#define COW      0
+#define BUNNY    1
+#define PLANE    2
+#define WALL     3
+#define MOON     4
+#define COWBUNNY 5
+#define COWBUNNYPHONG 6
 
 #define PI 3.14159265359
 #define NUMBER_OF_COWS 10
@@ -239,9 +241,12 @@ glm::vec4 throwBunnyVector;
 glm::vec4 throwBunnyPos;
 
 float timePrevious;
+float startTime;
 float timeNow;
 float timeVariation;
 bool gameRunning = false;
+bool isPaused = true;
+float bestScore = 1000;
 
 std::vector<Animal> arrayOfCows = spawnCows();
 Animal myBunny = Animal(0, vec3(0.0f, 0.0f, 0.0f), true);
@@ -363,8 +368,9 @@ int main(int argc, char* argv[])
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-
-    timePrevious = (float)glfwGetTime();
+    
+    startTime = (float)glfwGetTime();
+    timePrevious = startTime;
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
@@ -477,7 +483,7 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
         // Desenhamos os modelos da VACA
-        cowRotationAcc = cowRotationAcc + timeVariation*4;
+        cowRotationAcc = cowRotationAcc + (!isPaused ? timeVariation*4 : 0);
         int remainingCows = NUMBER_OF_COWS;
         for(int i=0; i < NUMBER_OF_COWS; i++){
             if (arrayOfCows[i].isAlive){
@@ -492,21 +498,25 @@ int main(int argc, char* argv[])
                 model = Matrix_Translate(arrayOfCows[i].position.x, arrayOfCows[i].position.y, arrayOfCows[i].position.z)
                     * Matrix_Translate(0.0, -1.0, 0.0);
                 glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(object_id_uniform, BUNNY);
+                glUniform1i(object_id_uniform, (!isPaused ? COWBUNNY : COWBUNNYPHONG));
                 DrawVirtualObject("bunny");
                 remainingCows--;
             }
             if(!remainingCows){
                 arrayOfCows = spawnCows();
                 gameRunning = false;
+                isPaused = true;
+                float score = (float)glfwGetTime() - startTime;
+                bunnyTimeAcc = 0;
+                bestScore = score < bestScore ? score : bestScore;
             }
 
         }
 
         // Desenhamos o modelo do coelho
         if(bunnyTimeAcc > 0){
-            bunnyTimeAcc = bunnyTimeAcc + timeVariation*4;
-            float bunnyRollAcc = bunnyRollAcc + timeVariation*r*16;
+            bunnyTimeAcc = bunnyTimeAcc + (!isPaused ? timeVariation*4 : 0);
+            float bunnyRollAcc = bunnyRollAcc + (!isPaused ? timeVariation*16 : 0);
             myBunny.position.x = throwBunnyPos.x+throwBunnyVector.x*bunnyTimeAcc;
             myBunny.position.y = throwBunnyPos.y+throwBunnyVector.y*bunnyTimeAcc;
             myBunny.position.z = throwBunnyPos.z+throwBunnyVector.z*bunnyTimeAcc;
@@ -858,6 +868,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), PLANE);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), WALL);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage4"), MOON);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage5"), COWBUNNY);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage5"), COWBUNNYPHONG);
     glUseProgram(0);
 }
 
@@ -1451,12 +1463,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         throwBunnyPos = cameraPos;
     }
 
-    //Game Run
-    if (key == GLFW_KEY_G && action == GLFW_PRESS)
+    //Play/Pause
+    if (key == GLFW_KEY_P && action == GLFW_PRESS)
     {
         gameRunning = true;
+        isPaused = !isPaused;
     }
-
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
@@ -1475,13 +1487,15 @@ void printStartGame(GLFWwindow* window)
     char bufferTitle[80];
     char bufferInstruction[80];
     char bufferBest[80];
+    char bufferStart[80];
     snprintf(bufferTitle, 80, "Bunny the Freestyle Cattle!");
-    snprintf(bufferInstruction, 80, "Press G to play");
-    snprintf(bufferBest, 80, "Best Score: %.0f", 23.2343f);
+    snprintf(bufferInstruction, 80, "Press P to play");
+    snprintf(bufferBest, 80, "Best Time: %.0f", bestScore);
+    snprintf(bufferStart, 80, "Be the best!!!");
 
     TextRendering_PrintString(window, bufferTitle,       -0.90 + pad/2, -12*pad, 3.2f);
     TextRendering_PrintString(window, bufferInstruction, -0.27 + pad/2, -14*pad, 2.0f);
-    TextRendering_PrintString(window, bufferBest,        -0.25 + pad/2, -16*pad, 2.0f);
+    TextRendering_PrintString(window, bestScore < 999 ? bufferBest : bufferStart,        -0.25 + pad/2, -16*pad, 2.0f);
 }
 
 
