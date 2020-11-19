@@ -458,6 +458,8 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
+        vec3 cameraPosVec3 = vec3(cameraPos.x, cameraPos.y, cameraPos.z);
+        myCow.pointInsideCube(cameraPosVec3);
 
         myCow.position.x = myCow.position.x + 0.01;
         myCow.updateHitBox();

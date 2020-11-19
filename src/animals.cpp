@@ -42,3 +42,15 @@ bool Animal::wallColision(){
         return true;
     return false;
 }
+
+float dotProduct(vec3 first, vec3 sec){
+    return (first.x * sec.x) + (first.y * sec.y) + (first.z * sec.z);
+}
+
+bool Animal::pointInsideCube(vec3 point){
+    if(point.x>= hitBoxMin.x && point.x <=hitBoxMax.x)
+        if(point.y>=hitBoxMin.y && point.y <=hitBoxMax.x)
+            if(point.z>=hitBoxMin.z && point.z<=hitBoxMax.z)
+                printf("HIRRRRRRRRRRRRRRRRRR\n\n");
+    return false;
+}

@@ -16,6 +16,7 @@ public:
     void updateHitBox();
     bool wallColision();
     void setPosition(vec3 position);
+    bool pointInsideCube(vec3 point);
 };
 
 #endif // _animals_hpp
