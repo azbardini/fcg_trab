@@ -150,8 +150,7 @@ void main()
     {
        // Propriedades espectrais do plano
         Kd = vec3(0.8, 0.8, 0.8);
-        Ks = vec3(0.8, 0.8, 0.8);
-        Ka = vec3(1.0,1.0,1.0); // Refletância ambiente
+        Ka = vec3(0.5,0.5,0.5); // Refletância ambiente
         q = 10.0;
 
           //Projeção esférica
@@ -216,7 +215,7 @@ void main()
     {
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    color = MoonTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
+    color = MoonTexture*(simple_lambert+0.02);
    }
 
         // Cor final com correção gamma, considerando monitor sRGB.

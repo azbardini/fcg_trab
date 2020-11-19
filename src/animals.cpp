@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <GLFW/glfw3.h>  // Criação de janelas do sistema operacional
+#include <GLFW/glfw3.h>  // Criaï¿½ï¿½o de janelas do sistema operacional
 #include "animals.hpp"
 
 #define CUBE_SIZE 0.8
