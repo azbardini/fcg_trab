@@ -8,12 +8,13 @@
 using namespace glm;
 
 class Animal{
+public:
     int id;
     float width, height, depth;
     bool alive;
-public:
     vec3 position, hitBoxMin, hitBoxMax;
     Animal(int id, vec3 position);
+    Animal();
     void updateHitBox();
     bool wallColision();
     void setPosition(vec3 position);

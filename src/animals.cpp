@@ -17,6 +17,11 @@ Animal::Animal(int id, vec3 position){
     this->hitBoxMax = vec3(0.0f, 0.0f, 0.0f);
     this->hitBoxMin = vec3(0.0f, 0.0f, 0.0f);
 }
+Animal::Animal(){
+    this->height = CUBE_SIZE;
+    this->width = CUBE_SIZE;
+    this->depth = CUBE_SIZE;
+}
 
 void Animal::setPosition(vec3 position){
     this->position = position;

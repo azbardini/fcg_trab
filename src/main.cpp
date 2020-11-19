@@ -30,6 +30,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <ctime>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -61,6 +62,7 @@
 #define PLANE_SIZE_X 20.0f
 #define PLANE_SIZE_Z 20.0f
 #define PI 3.14159265359
+#define NUMBER_OF_COWS 20
 
 // Constantes
 const float CAMERA_SPEED = 0.02;
@@ -142,10 +144,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 
+#include <array>
 // My Functions
 void DrawEnviroment();
 void printStartGame(GLFWwindow* window);
 glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight);
+std::vector<Animal> spawnCows();
+bool AnimalsColliding(Animal A1, Animal A2);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -235,6 +240,8 @@ float timePrevious;
 float timeNow;
 float timeVariation;
 bool gameRunning = false;
+
+std::vector<Animal> arrayOfCows = spawnCows();
 
 int main(int argc, char* argv[])
 {
@@ -357,13 +364,6 @@ int main(int argc, char* argv[])
     glm::mat4 the_model;
     glm::mat4 the_view;
 
-    vec3 firstPosCow  = vec3(0.0f, 0.2f, 0.0f);
-    Animal myCow = Animal(1, firstPosCow);
-    firstPosCow  = vec3(10.0f, 0.2f, 0.23f);
-    Animal myCow2 = Animal(1, firstPosCow);
-    myCow.updateHitBox();
-    myCow.wallColision();
-
     timePrevious = (float)glfwGetTime();
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -461,33 +461,16 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
         vec3 cameraPosVec3 = vec3(cameraPos.x, cameraPos.y, cameraPos.z);
-        myCow.pointInsideCube(cameraPosVec3);
 
-        myCow.position.x = myCow.position.x + 0.01;
-        myCow.updateHitBox();
-        if(myCow.wallColision()){
-           myCow.position.x = myCow.position.x - 3;
+        for(int i=0; i < NUMBER_OF_COWS; i++){
+            // Desenhamos o modelo da VACA
+            model = Matrix_Translate(arrayOfCows[i].position.x, arrayOfCows[i].position.y, arrayOfCows[i].position.z)
+            * Matrix_Scale(2.0, 2.0, 2.0)
+            * Matrix_Rotate_Y(cameraTarget.x*PI);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, COW);
+            DrawVirtualObject("cow");
         }
-
-        myCow2.updateHitBox();
-        if(myCow.cubeInsideCube(myCow2.hitBoxMin, myCow2.hitBoxMax)){
-           printf("bateu");
-        }
-
-        // Desenhamos o modelo da VACA
-        model = Matrix_Translate(myCow.position.x, myCow.position.y,myCow.position.y)
-        * Matrix_Scale(2.0, 2.0, 2.0)
-        * Matrix_Rotate_Y(cameraTarget.x*PI);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, COW);
-        DrawVirtualObject("cow");
-
-        model = Matrix_Translate(myCow2.position.x, myCow2.position.y,myCow2.position.y)
-        * Matrix_Scale(2.0, 2.0, 2.0)
-        * Matrix_Rotate_Y(cameraTarget.x*PI);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, COW);
-        DrawVirtualObject("cow");
 
         // Desenhamos o modelo do coelho
         model = Matrix_Translate(5.0f,0.0f,0.0f)
@@ -572,6 +555,59 @@ int main(int argc, char* argv[])
 
     // Fim do programa
     return 0;
+}
+#include <random>
+std::vector<Animal> spawnCows(){
+    srand(time(NULL) );
+    float posX;
+    float posZ;
+    vec3 posCow = vec3(0.0f, 0.0f, 0.0f);
+    Animal newCow(0, posCow);
+    std::vector<Animal> arrayOfCows(NUMBER_OF_COWS);
+    int j;
+    //porque precisa disso? também me pergunto :)
+    int plane_size_x = PLANE_SIZE_X - 2;
+    int plane_size_z = PLANE_SIZE_Z - 2;
+
+    std::random_device seeder;
+    std::mt19937 engine(seeder());
+    std::uniform_int_distribution<int> genX(-plane_size_x, plane_size_x);
+
+    std::uniform_int_distribution<int> genZ(-plane_size_z, plane_size_z);
+
+    for(int i= 0; i<NUMBER_OF_COWS; i++){
+
+        //rand position to put the new cow
+        posX = genX(engine);
+        posZ = genZ(engine);
+        printf(" %f %f\n", posX, posZ);
+        posCow = vec3(posX, 0.02f, posZ);
+        newCow.id = i;
+        newCow.position = posCow;
+        newCow.updateHitBox();
+
+        //test if already have a cow there
+        j = 0;
+        while(j<i){
+            while(AnimalsColliding(newCow, arrayOfCows[j])){
+                newCow.position.x = genX(engine);
+                newCow.position.z = genZ(engine);
+                newCow.updateHitBox();
+                j = 0;
+                printf("colidinggg");
+            }
+            j++;
+        }
+        arrayOfCows[i] = newCow;
+    }
+
+    return arrayOfCows;
+}
+
+bool AnimalsColliding(Animal A1, Animal A2){
+    if(A1.cubeInsideCube(A2.hitBoxMin, A2.hitBoxMax) || A2.cubeInsideCube(A1.hitBoxMin, A1.hitBoxMax))
+       return true;
+    return false;
 }
 
 glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight)
