@@ -53,6 +53,10 @@
 #include "matrices.h"
 #include "animals.cpp"
 
+// Nossas inclusões
+#include <array>
+#include <random>
+
 #define COW     0
 #define BUNNY   1
 #define PLANE   2
@@ -62,7 +66,7 @@
 #define PLANE_SIZE_X 20.0f
 #define PLANE_SIZE_Z 20.0f
 #define PI 3.14159265359
-#define NUMBER_OF_COWS 20
+#define NUMBER_OF_COWS 40
 
 // Constantes
 const float CAMERA_SPEED = 0.02;
@@ -144,13 +148,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 
-#include <array>
 // My Functions
 void DrawEnviroment();
 void printStartGame(GLFWwindow* window);
 glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight);
 std::vector<Animal> spawnCows();
 bool AnimalsColliding(Animal A1, Animal A2);
+float bezier(double A, double B, double C, double D, double t);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -224,6 +228,7 @@ GLint bbox_min_uniform;
 GLint bbox_max_uniform;
 
 glm::vec4 firstCameraPos  = glm::vec4(1.0f, 1.0f, -4.0f, 1.0f);
+glm::vec4 camera_lookat_l = glm::vec4(1.0f, 1.0f, -4.0f, 1.0f);
 glm::vec4 cameraPos  = firstCameraPos;
 
 static int cosAngle(glm::vec4 v1, glm::vec4 v2);
@@ -234,6 +239,10 @@ GLuint g_NumLoadedTextures = 0;
 // Estados da maquina
 glm::vec4 cameraTarget;
 float bunnyTimeAcc = 0;
+float bezierTimeAcc = 0;
+float bezierTimeDirection = 1;
+float cowRotationAcc = 0;
+        
 glm::vec4 throwBunnyVector;
 
 float timePrevious;
@@ -246,6 +255,10 @@ Animal myBunny = Animal(0, vec3(0.0f, 0.0f, 0.0f), true);
 
 int main(int argc, char* argv[])
 {
+    // Variável randomica geral
+    srand(time(NULL) );
+    float randomVar = ((double) rand() / (10));
+
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
     // sistema operacional, onde poderemos renderizar com OpenGL.
     int success = glfwInit();
@@ -369,6 +382,7 @@ int main(int argc, char* argv[])
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
+        // Tempo de jogo
         timeNow = (float)glfwGetTime();
         timeVariation = timeNow - timePrevious;
         timePrevious = timeNow;
@@ -411,10 +425,30 @@ int main(int argc, char* argv[])
             // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
             view = Matrix_Camera_View(cameraPos, cameraTarget, cameraUp);
         } else {
-            // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-            // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-            glm::vec4 camera_position_c  = glm::vec4(x,y+15.0f,z,1.0f); // Ponto "c", centro da câmera
-            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,12.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+
+            // Definimos começo, fim e 2 pontos de controle para a curva de bezier
+            vec3 bezierStart =      vec3(-14.0f, 0.0f, -14.0f);
+            vec3 bezierEnd =        vec3( 14.0f, 0.0f,  14.0f);
+            vec3 bezierControl1 =   vec3(-14.0f, 0.0f,  28.0f);
+            vec3 bezierControl2 =   vec3( 14.0f, 0.0f, -28.0f);
+
+            //Definimos um acumulador de tempo, que aumenta e diminui ao chegar em thresholds 
+            float bezierTimeThreshold = 16;
+            bezierTimeAcc = bezierTimeAcc + (4 * timeVariation * bezierTimeDirection);
+            if(bezierTimeAcc > bezierTimeThreshold) bezierTimeDirection = -1;
+            if(bezierTimeAcc < 0) bezierTimeDirection = 1;
+
+            // Normalizamos o tempo entre 0 e 1
+            float bezierNormalizedTime = bezierTimeAcc / bezierTimeThreshold;
+
+            // Calculamos bezier pra cada ponto
+            float bezierX = bezier(bezierStart.x, bezierControl1.x, bezierControl2.x, bezierEnd.x, bezierNormalizedTime);
+            float bezierY = 18.0f;
+            float bezierZ = bezier(bezierStart.z, bezierControl1.z, bezierControl2.z, bezierEnd.z, bezierNormalizedTime);
+
+            // Colocamos a camera lookat em coordenadas de bezier no tempo, a lua acompanhará a camera camera_lookat_l
+            glm::vec4 camera_position_c  = glm::vec4(x+bezierX,y+bezierY,z+bezierZ,1.0f); // Ponto "c", centro da câmera
+            camera_lookat_l    = glm::vec4(bezierX,bezierY-3.0f,bezierZ,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
             glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
             glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
@@ -434,17 +468,12 @@ int main(int argc, char* argv[])
         if (g_UsePerspectiveProjection)
         {
             // Projeção Perspectiva.
-            // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
             float field_of_view = PI / 3.0f;
             projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
         }
         else
         {
             // Projeção Ortográfica.
-            // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
-            // PARA PROJEÇÃO ORTOGRÁFICA veja slides 219-224 do documento Aula_09_Projecoes.pdf.
-            // Para simular um "zoom" ortográfico, computamos o valor de "t"
-            // utilizando a variável g_CameraDistance.
             float t = 1.5f*g_CameraDistance/2.5f;
             float b = -t;
             float r = t*g_ScreenRatio;
@@ -463,40 +492,39 @@ int main(int argc, char* argv[])
 
         vec3 cameraPosVec3 = vec3(cameraPos.x, cameraPos.y, cameraPos.z);
 
+        cowRotationAcc = cowRotationAcc + timeVariation*4;
+        int remainingCows = NUMBER_OF_COWS;
         for(int i=0; i < NUMBER_OF_COWS; i++){
             // Desenhamos o modelo da VACA
+            float randomCowPos = ((double) rand() / (10));
             if (arrayOfCows[i].isAlive){
                 model = Matrix_Translate(arrayOfCows[i].position.x, arrayOfCows[i].position.y, arrayOfCows[i].position.z)
                     * Matrix_Scale(2.0, 2.0, 2.0)
-                    * Matrix_Rotate_Y(cameraTarget.x*PI);
+                    * Matrix_Rotate_Y(cowRotationAcc)
+                    * Matrix_Rotate_Z(-PI/2-0.5);
                 glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                 glUniform1i(object_id_uniform, COW);
                 DrawVirtualObject("cow");
+            }else{
+                remainingCows--;
             }
+            if(!remainingCows){
+                arrayOfCows = spawnCows();
+                gameRunning = false;
+            }
+
         }
 
         // Desenhamos o modelo do coelho
-        model = Matrix_Translate(5.0f,0.0f,0.0f)
-              * Matrix_Rotate_Z(g_AngleZ)
-              * Matrix_Rotate_Y(g_AngleY)
-              * Matrix_Rotate_X(g_AngleX);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BUNNY);
-        DrawVirtualObject("bunny");
-
-
-        // Desenhamos o modelo do coelho
         if(bunnyTimeAcc > 0){
-            float r = ((double) rand() / (RAND_MAX));
             bunnyTimeAcc = bunnyTimeAcc + timeVariation*4;
             float bunnyRollAcc = bunnyRollAcc + timeVariation*r*16;
-            myBunny.position.x = throwBunnyVector.x*bunnyTimeAcc;
-            myBunny.position.y = throwBunnyVector.y*bunnyTimeAcc;
-            myBunny.position.z = throwBunnyVector.z*bunnyTimeAcc;
+            myBunny.position.x = cameraPos.x+throwBunnyVector.x*bunnyTimeAcc;
+            myBunny.position.y = cameraPos.y+throwBunnyVector.y*bunnyTimeAcc;
+            myBunny.position.z = cameraPos.z+throwBunnyVector.z*bunnyTimeAcc;
             myBunny.updateHitBox();
             //se o coelho não bateu na parede, continua desenhando
             model = Matrix_Translate(myBunny.position.x, myBunny.position.y, myBunny.position.z)
-                * Matrix_Translate(cameraPos.x,cameraPos.y, cameraPos.z)
                 * Matrix_Rotate_Z(bunnyRollAcc)
                 * Matrix_Rotate_Y(bunnyRollAcc)
                 * Matrix_Rotate_X(bunnyRollAcc)
@@ -521,7 +549,7 @@ int main(int argc, char* argv[])
         if(gameRunning){
             model = Matrix_Translate(cameraPos.x+5.0f,12.0f,cameraPos.z+5.0f);
         }else{
-            model = Matrix_Translate(0.0f,12.0f,0.0f);
+            model = Matrix_Translate(camera_lookat_l.x,camera_lookat_l.y,camera_lookat_l.z);
         }
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, MOON);
@@ -572,9 +600,7 @@ int main(int argc, char* argv[])
     // Fim do programa
     return 0;
 }
-#include <random>
 std::vector<Animal> spawnCows(){
-    srand(time(NULL) );
     float posX;
     float posZ;
     vec3 posCow = vec3(0.0f, 0.0f, 0.0f);
@@ -595,7 +621,7 @@ std::vector<Animal> spawnCows(){
         //rand position to put the new cow
         posX = genX(engine);
         posZ = genZ(engine);
-        posCow = vec3(posX, 0.02f, posZ);
+        posCow = vec3(posX, 1.0f, posZ);
         newCow.id = i;
         newCow.position = posCow;
         newCow.updateHitBox();
@@ -615,6 +641,18 @@ std::vector<Animal> spawnCows(){
     }
 
     return arrayOfCows;
+}
+
+// Calcula bezier pra um ponto no espaço
+float bezier(double A, double B, double C, double D, double t){
+    double s = 1 - t;
+    double AB = A*s + B*t;
+    double BC = B*s + C*t;
+    double CD = C*s + D*t;
+    double ABC = AB*s + BC*t;
+    double BCD = BC*s + CD*t;
+    double finalPoint = ABC*s + BCD*t;
+    return finalPoint;
 }
 
 bool AnimalsColliding(Animal A1, Animal A2){
