@@ -10,10 +10,11 @@ using namespace glm;
 class Animal{
 public:
     int id;
+    bool isRabbit;
     float width, height, depth;
-    bool alive;
+    bool isAlive;
     vec3 position, hitBoxMin, hitBoxMax;
-    Animal(int id, vec3 position);
+    Animal(int id, vec3 position, bool isRabbit);
     Animal();
     void updateHitBox();
     bool wallColision();

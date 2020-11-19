@@ -2,13 +2,14 @@
 #include <GLFW/glfw3.h>  // Criação de janelas do sistema operacional
 #include "animals.hpp"
 
-#define CUBE_SIZE 0.6
+#define CUBE_SIZE 0.8
+#define CUBE_SIZE_RABBIT 0.3
 #define PLANE_SIZE_X 20
 #define PLANE_SIZE_Z 20
 
 using namespace glm;
 
-Animal::Animal(int id, vec3 position){
+Animal::Animal(int id, vec3 position, bool isRabbit = false){
     this->id = id;
     this->position = position;
     this->height = CUBE_SIZE;
@@ -16,11 +17,21 @@ Animal::Animal(int id, vec3 position){
     this->depth = CUBE_SIZE;
     this->hitBoxMax = vec3(0.0f, 0.0f, 0.0f);
     this->hitBoxMin = vec3(0.0f, 0.0f, 0.0f);
+    this->isRabbit = isRabbit;
+    this->isAlive = true;
+
+    if(isRabbit){
+        this->height = CUBE_SIZE_RABBIT;
+        this->width = CUBE_SIZE_RABBIT;
+        this->depth = CUBE_SIZE_RABBIT;
+    }
 }
+
 Animal::Animal(){
     this->height = CUBE_SIZE;
     this->width = CUBE_SIZE;
     this->depth = CUBE_SIZE;
+    this->isAlive = true;
 }
 
 void Animal::setPosition(vec3 position){

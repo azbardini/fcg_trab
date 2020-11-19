@@ -242,6 +242,7 @@ float timeVariation;
 bool gameRunning = false;
 
 std::vector<Animal> arrayOfCows = spawnCows();
+Animal myBunny = Animal(0, vec3(0.0f, 0.0f, 0.0f), true);
 
 int main(int argc, char* argv[])
 {
@@ -464,12 +465,14 @@ int main(int argc, char* argv[])
 
         for(int i=0; i < NUMBER_OF_COWS; i++){
             // Desenhamos o modelo da VACA
-            model = Matrix_Translate(arrayOfCows[i].position.x, arrayOfCows[i].position.y, arrayOfCows[i].position.z)
-            * Matrix_Scale(2.0, 2.0, 2.0)
-            * Matrix_Rotate_Y(cameraTarget.x*PI);
-            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(object_id_uniform, COW);
-            DrawVirtualObject("cow");
+            if (arrayOfCows[i].isAlive){
+                model = Matrix_Translate(arrayOfCows[i].position.x, arrayOfCows[i].position.y, arrayOfCows[i].position.z)
+                    * Matrix_Scale(2.0, 2.0, 2.0)
+                    * Matrix_Rotate_Y(cameraTarget.x*PI);
+                glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(object_id_uniform, COW);
+                DrawVirtualObject("cow");
+            }
         }
 
         // Desenhamos o modelo do coelho
@@ -487,7 +490,12 @@ int main(int argc, char* argv[])
             float r = ((double) rand() / (RAND_MAX));
             bunnyTimeAcc = bunnyTimeAcc + timeVariation*4;
             float bunnyRollAcc = bunnyRollAcc + timeVariation*r*16;
-            model = Matrix_Translate(throwBunnyVector.x*bunnyTimeAcc,throwBunnyVector.y*bunnyTimeAcc, throwBunnyVector.z*bunnyTimeAcc)
+            myBunny.position.x = throwBunnyVector.x*bunnyTimeAcc;
+            myBunny.position.y = throwBunnyVector.y*bunnyTimeAcc;
+            myBunny.position.z = throwBunnyVector.z*bunnyTimeAcc;
+            myBunny.updateHitBox();
+            //se o coelho não bateu na parede, continua desenhando
+            model = Matrix_Translate(myBunny.position.x, myBunny.position.y, myBunny.position.z)
                 * Matrix_Translate(cameraPos.x,cameraPos.y, cameraPos.z)
                 * Matrix_Rotate_Z(bunnyRollAcc)
                 * Matrix_Rotate_Y(bunnyRollAcc)
@@ -496,6 +504,14 @@ int main(int argc, char* argv[])
             glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(object_id_uniform, BUNNY);
             DrawVirtualObject("bunny");
+
+            for(int i=0; i < NUMBER_OF_COWS; i++){
+                // Desenhamos o modelo da VACA
+                if (arrayOfCows[i].isAlive){
+                    if(AnimalsColliding(arrayOfCows[i], myBunny))
+                        arrayOfCows[i].isAlive = false;
+                }
+            }
         }
         if(bunnyTimeAcc > 200){
             bunnyTimeAcc = 0;
@@ -565,7 +581,6 @@ std::vector<Animal> spawnCows(){
     Animal newCow(0, posCow);
     std::vector<Animal> arrayOfCows(NUMBER_OF_COWS);
     int j;
-    //porque precisa disso? também me pergunto :)
     int plane_size_x = PLANE_SIZE_X - 2;
     int plane_size_z = PLANE_SIZE_Z - 2;
 
@@ -580,7 +595,6 @@ std::vector<Animal> spawnCows(){
         //rand position to put the new cow
         posX = genX(engine);
         posZ = genZ(engine);
-        printf(" %f %f\n", posX, posZ);
         posCow = vec3(posX, 0.02f, posZ);
         newCow.id = i;
         newCow.position = posCow;
@@ -594,7 +608,6 @@ std::vector<Animal> spawnCows(){
                 newCow.position.z = genZ(engine);
                 newCow.updateHitBox();
                 j = 0;
-                printf("colidinggg");
             }
             j++;
         }
