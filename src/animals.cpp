@@ -43,14 +43,44 @@ bool Animal::wallColision(){
     return false;
 }
 
-float dotProduct(vec3 first, vec3 sec){
-    return (first.x * sec.x) + (first.y * sec.y) + (first.z * sec.z);
-}
-
 bool Animal::pointInsideCube(vec3 point){
     if(point.x>= hitBoxMin.x && point.x <=hitBoxMax.x)
-        if(point.y>=hitBoxMin.y && point.y <=hitBoxMax.x)
+        if(point.y>=hitBoxMin.y && point.y <=hitBoxMax.y)
             if(point.z>=hitBoxMin.z && point.z<=hitBoxMax.z)
-                printf("HIRRRRRRRRRRRRRRRRRR\n\n");
+                return true;
+    return false;
+}
+
+bool Animal::cubeInsideCube(vec3 otherHitBoxMin, vec3 otherHitBoxMax){
+    vec3 aux;
+    if(pointInsideCube(otherHitBoxMin))
+        return true;
+    if(pointInsideCube(otherHitBoxMax))
+        return true;
+
+    aux = vec3(otherHitBoxMin.x, otherHitBoxMin.y, otherHitBoxMax.z);
+    if(pointInsideCube(aux))
+        return true;
+
+    aux = vec3(otherHitBoxMin.x, otherHitBoxMax.y, otherHitBoxMax.z);
+    if(pointInsideCube(aux))
+        return true;
+
+    aux = vec3(otherHitBoxMin.x, otherHitBoxMax.y, otherHitBoxMin.z);
+    if(pointInsideCube(aux))
+        return true;
+
+    aux = vec3(otherHitBoxMax.x, otherHitBoxMax.y, otherHitBoxMin.z);
+    if(pointInsideCube(aux))
+        return true;
+
+    aux = vec3(otherHitBoxMax.x, otherHitBoxMin.y, otherHitBoxMin.z);
+    if(pointInsideCube(aux))
+        return true;
+
+    aux = vec3(otherHitBoxMax.x, otherHitBoxMin.y, otherHitBoxMax.z);
+    if(pointInsideCube(aux))
+        return true;
+
     return false;
 }

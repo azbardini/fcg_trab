@@ -10,6 +10,7 @@ using namespace glm;
 class Animal{
     int id;
     float width, height, depth;
+    bool alive;
 public:
     vec3 position, hitBoxMin, hitBoxMax;
     Animal(int id, vec3 position);
@@ -17,6 +18,7 @@ public:
     bool wallColision();
     void setPosition(vec3 position);
     bool pointInsideCube(vec3 point);
+    bool cubeInsideCube(vec3 otherHitBoxMin, vec3 otherHitBoxMax);
 };
 
 #endif // _animals_hpp

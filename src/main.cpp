@@ -359,6 +359,8 @@ int main(int argc, char* argv[])
 
     vec3 firstPosCow  = vec3(0.0f, 0.2f, 0.0f);
     Animal myCow = Animal(1, firstPosCow);
+    firstPosCow  = vec3(10.0f, 0.2f, 0.23f);
+    Animal myCow2 = Animal(1, firstPosCow);
     myCow.updateHitBox();
     myCow.wallColision();
 
@@ -466,8 +468,21 @@ int main(int argc, char* argv[])
         if(myCow.wallColision()){
            myCow.position.x = myCow.position.x - 3;
         }
+
+        myCow2.updateHitBox();
+        if(myCow.cubeInsideCube(myCow2.hitBoxMin, myCow2.hitBoxMax)){
+           printf("bateu");
+        }
+
         // Desenhamos o modelo da VACA
         model = Matrix_Translate(myCow.position.x, myCow.position.y,myCow.position.y)
+        * Matrix_Scale(2.0, 2.0, 2.0)
+        * Matrix_Rotate_Y(cameraTarget.x*PI);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, COW);
+        DrawVirtualObject("cow");
+
+        model = Matrix_Translate(myCow2.position.x, myCow2.position.y,myCow2.position.y)
         * Matrix_Scale(2.0, 2.0, 2.0)
         * Matrix_Rotate_Y(cameraTarget.x*PI);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
