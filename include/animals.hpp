@@ -11,8 +11,11 @@ class Animal{
     int id;
     float width, height, depth;
 public:
-    vec3 position;
+    vec3 position, hitBoxMin, hitBoxMax;
     Animal(int id, vec3 position);
+    void updateHitBox();
+    bool wallColision();
+    void setPosition(vec3 position);
 };
 
 #endif // _animals_hpp

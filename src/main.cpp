@@ -359,6 +359,8 @@ int main(int argc, char* argv[])
 
     vec3 firstPosCow  = vec3(0.0f, 0.2f, 0.0f);
     Animal myCow = Animal(1, firstPosCow);
+    myCow.updateHitBox();
+    myCow.wallColision();
 
     timePrevious = (float)glfwGetTime();
     // Ficamos em loop, renderizando, até que o usuário feche a janela
@@ -456,7 +458,12 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        myCow.position.x = myCow.position.x + 0.001;
+
+        myCow.position.x = myCow.position.x + 0.01;
+        myCow.updateHitBox();
+        if(myCow.wallColision()){
+           myCow.position.x = myCow.position.x - 3;
+        }
         // Desenhamos o modelo da VACA
         model = Matrix_Translate(myCow.position.x, myCow.position.y,myCow.position.y)
         * Matrix_Scale(2.0, 2.0, 2.0)
