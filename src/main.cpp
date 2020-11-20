@@ -486,6 +486,7 @@ int main(int argc, char* argv[])
         cowRotationAcc = cowRotationAcc + (!isPaused ? timeVariation*4 : 0);
         int remainingCows = NUMBER_OF_COWS;
         for(int i=0; i < NUMBER_OF_COWS; i++){
+            //desenha a vaca no mapa se está viva
             if (arrayOfCows[i].isAlive){
                 model = Matrix_Translate(arrayOfCows[i].position.x, arrayOfCows[i].position.y, arrayOfCows[i].position.z)
                     * Matrix_Scale(2.0, 2.0, 2.0)
@@ -494,6 +495,7 @@ int main(int argc, char* argv[])
                 glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                 glUniform1i(object_id_uniform, COW);
                 DrawVirtualObject("cow");
+            //se ela estiver morta, desenha um coelho
             }else{
                 model = Matrix_Translate(arrayOfCows[i].position.x, arrayOfCows[i].position.y, arrayOfCows[i].position.z)
                     * Matrix_Translate(0.0, -1.0, 0.0);
@@ -533,8 +535,9 @@ int main(int argc, char* argv[])
             DrawVirtualObject("bunny");
 
             for(int i=0; i < NUMBER_OF_COWS; i++){
-                // Desenhamos o modelo da VACA
+                //para cada animal que ainda está vivo, ou seja, que ainda é vaca
                 if (arrayOfCows[i].isAlive){
+                    //testa se o coelho colidiu com a vaca, se for verdadeiro troca o status para morto
                     if(AnimalsColliding(arrayOfCows[i], myBunny))
                         arrayOfCows[i].isAlive = false;
                 }
@@ -554,15 +557,7 @@ int main(int argc, char* argv[])
         glUniform1i(object_id_uniform, MOON);
         DrawVirtualObject("sphere");
 
-
         DrawEnviroment();
-
-        // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
-        // passamos por todos os sistemas de coordenadas armazenados nas
-        // matrizes the_model, the_view, e the_projection; e escrevemos na tela
-        // as matrizes e pontos resultantes dessas transformações.
-        //glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
-        //TextRendering_ShowModelViewProjection(window, projection, view, model, p_model);
 
         //Chama o print de começo de jogo
         printStartGame(window);
@@ -592,6 +587,10 @@ int main(int argc, char* argv[])
     // Fim do programa
     return 0;
 }
+
+// Coloca vacas aleatórias pelo mapa.
+// As vacas são colocadas sempre dentro dos limites do mapa.
+// Além disso são feitos teste de colisão, para não colocar duas vacas no mesmo lugar
 std::vector<Animal> spawnCows(){
     float posX;
     float posZ;
@@ -647,12 +646,16 @@ float bezier(double A, double B, double C, double D, double t){
     return finalPoint;
 }
 
+//Testa se dois animais colidiram, fazendo:
+//  - Teste para ver se os pontos da HitBox do primeiro estão dentro da hitBox do segundo.
+//  - Teste para ver se os pontos da HitBox do segundo estão dentro da hitBox do primeiro.
 bool AnimalsColliding(Animal A1, Animal A2){
     if(A1.cubeInsideCube(A2.hitBoxMin, A2.hitBoxMax) || A2.cubeInsideCube(A1.hitBoxMin, A1.hitBoxMax))
        return true;
     return false;
 }
 
+//Pega a próxima posição do jogador, fazendo testes de colisão com a parede e com os animais distribuídos pelo mapa.
 glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight, std::vector<Animal>)
 {
     glm::vec4 newCameraPos = cameraPos;

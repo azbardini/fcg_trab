@@ -38,6 +38,7 @@ void Animal::setPosition(vec3 position){
     this->position = position;
 }
 
+//faz a atualização do ponto máximo e mínimo da hitBox
 void Animal::updateHitBox(){
     hitBoxMin.x = position.x - width;
     hitBoxMin.y = position.y - height;
@@ -47,6 +48,7 @@ void Animal::updateHitBox(){
     hitBoxMax.z = position.z + depth;
 }
 
+//testa se a hitBox do animal bateu na parede do plano
 bool Animal::wallColision(){
     if(hitBoxMin.x< -PLANE_SIZE_X+1 || hitBoxMin.x > PLANE_SIZE_Z -1)
         return true;
@@ -59,6 +61,10 @@ bool Animal::wallColision(){
     return false;
 }
 
+//testa se um ponto qualquer esta dentro da hitBox do Animal
+//usado para:
+// - função de colisão de dois animais (cubeInsideCube)
+// - testar se a camera da pessoa (que é um ponto) está colidindo com algum animal
 bool Animal::pointInsideCube(vec3 point){
     if(point.x>= hitBoxMin.x && point.x <=hitBoxMax.x)
         if(point.y>=hitBoxMin.y && point.y <=hitBoxMax.y)
@@ -67,6 +73,8 @@ bool Animal::pointInsideCube(vec3 point){
     return false;
 }
 
+//testa se algum dos pontos da hitBox fornecida está dentro da hitBox do Animal
+//usado para testar colisão entre dois animais
 bool Animal::cubeInsideCube(vec3 otherHitBoxMin, vec3 otherHitBoxMax){
     vec3 aux;
     if(pointInsideCube(otherHitBoxMin))
