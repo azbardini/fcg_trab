@@ -24,7 +24,6 @@ out vec4 normal;
 out vec2 texcoords;
 
 out vec3 gouraud_color;
-out vec3 lightpos;
 
 void main()
 {
