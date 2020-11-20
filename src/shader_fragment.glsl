@@ -73,7 +73,7 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(vec4(0.0,1.0,0.0,0.0));
+    vec4 l = normalize(vec4(0.2,1.0,0.2,0.0));
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
@@ -173,9 +173,10 @@ void main()
     }
     else if ( object_id == MOON)
     {
-       // Propriedades espectrais do plano
-        Kd = vec3(0.8, 0.8, 0.8);
-        Ka = vec3(0.5,0.5,0.5); // Refletância ambiente
+        l = normalize(vec4(2.1,-2.0,0.0,0.0));
+  // Propriedades espectrais do plano
+        Kd = vec3(0.9, 0.9, 0.9);
+        Ka = vec3(0.2,0.2,0.2); // Refletância ambiente
         q = 10.0;
 
           //Projeção esférica
@@ -215,7 +216,7 @@ void main()
     else if ( object_id == BUNNY )    color = FurTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     else if ( object_id == PLANE )    color = GrassTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     else if ( object_id == WALL1 )    color = FenceTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
-    else if ( object_id == MOON )     color = MoonTexture*(simple_lambert+0.02);
+    else if ( object_id == MOON )     color = MoonTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     else if ( object_id == COWBUNNY ) color = gouraud_color;
     else if ( object_id == COWBUNNYPHONG ) color = lambert_diffuse_term + ambient_term + phong_specular_term;;
 

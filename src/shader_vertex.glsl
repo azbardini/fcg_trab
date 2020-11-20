@@ -74,7 +74,7 @@ void main()
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 camera_position = inverse(view) * origin;
     vec4 n = normalize(normal);
-    vec4 l = normalize(vec4(0.0,1.0,0.0,0.0));
+    vec4 l = normalize(vec4(0.2,1.0,0.2,0.0));
     vec4 v = normalize(camera_position - p);
     vec4 r = -l + 2*n*dot(n,l);
     vec3 Kd = vec3(0.6, 0.6, 0.6);  // Refletância difusa

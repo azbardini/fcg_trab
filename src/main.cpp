@@ -145,7 +145,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 // My Functions
 void DrawEnviroment();
 void printStartGame(GLFWwindow* window);
-glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight);
+glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight, std::vector<Animal>);
 std::vector<Animal> spawnCows();
 bool AnimalsColliding(Animal A1, Animal A2);
 float bezier(double A, double B, double C, double D, double t);
@@ -236,7 +236,7 @@ float bunnyTimeAcc = 0;
 float bezierTimeAcc = 0;
 float bezierTimeDirection = 1;
 float cowRotationAcc = 0;
-        
+
 glm::vec4 throwBunnyVector;
 glm::vec4 throwBunnyPos;
 
@@ -368,7 +368,7 @@ int main(int argc, char* argv[])
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-    
+
     startTime = (float)glfwGetTime();
     timePrevious = startTime;
     // Ficamos em loop, renderizando, até que o usuário feche a janela
@@ -412,7 +412,7 @@ int main(int argc, char* argv[])
             glm::vec4 genericUp =       glm::vec4(0.0f, 1.0f ,0.0f ,0.0f);
             glm::vec4 cameraRight =     crossproduct(genericUp,cameraTarget);
             glm::vec4 cameraUp =        crossproduct(cameraTarget,cameraRight);
-            cameraPos = GetNewCameraPos(cameraPos, cameraOnEyesHeight, cameraRight);
+            cameraPos = GetNewCameraPos(cameraPos, cameraOnEyesHeight, cameraRight, arrayOfCows);
             // Computamos a matriz "View" utilizando os parâmetros da câmera para
             // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
             view = Matrix_Camera_View(cameraPos, cameraTarget, cameraUp);
@@ -424,7 +424,7 @@ int main(int argc, char* argv[])
             vec3 bezierControl1 =   vec3(-14.0f, 0.0f,  28.0f);
             vec3 bezierControl2 =   vec3( 14.0f, 0.0f, -28.0f);
 
-            //Definimos um acumulador de tempo, que aumenta e diminui ao chegar em thresholds 
+            //Definimos um acumulador de tempo, que aumenta e diminui ao chegar em thresholds
             float bezierTimeThreshold = 16;
             bezierTimeAcc = bezierTimeAcc + (4 * timeVariation * bezierTimeDirection);
             if(bezierTimeAcc > bezierTimeThreshold) bezierTimeDirection = -1;
@@ -472,9 +472,9 @@ int main(int argc, char* argv[])
             float l = -r;
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
         }
-        
+
         // Transformação identidade de modelagem
-        glm::mat4 model = Matrix_Identity(); 
+        glm::mat4 model = Matrix_Identity();
 
         // Enviamos as matrizes "view" e "projection" para a placa de vídeo
         // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
@@ -509,6 +509,7 @@ int main(int argc, char* argv[])
                 float score = (float)glfwGetTime() - startTime;
                 bunnyTimeAcc = 0;
                 bestScore = score < bestScore ? score : bestScore;
+                score = 0;
             }
 
         }
@@ -652,7 +653,7 @@ bool AnimalsColliding(Animal A1, Animal A2){
     return false;
 }
 
-glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight)
+glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm::vec4 cameraRight, std::vector<Animal>)
 {
     glm::vec4 newCameraPos = cameraPos;
     glm::vec4 auxCameraPos = cameraPos;
@@ -725,6 +726,16 @@ glm::vec4 GetNewCameraPos(glm::vec4 cameraPos, glm::vec4 cameraOnEyesHeight, glm
 
         newCameraPos.x = newX;
         newCameraPos.z = newZ;
+    }
+
+    glm::vec3 cameraPosPoint = vec3(newCameraPos.x, newCameraPos.y, newCameraPos.z);
+
+    for(int i=0; i<NUMBER_OF_COWS; i++){
+        if(arrayOfCows[i].pointInsideCube(cameraPosPoint)){
+            newCameraPos.x = cameraPos.x;
+            newCameraPos.y = cameraPos.y;
+            newCameraPos.z = cameraPos.z;
+        }
     }
 
     return newCameraPos;
@@ -1466,6 +1477,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     //Play/Pause
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
     {
+        if(!gameRunning) startTime=(float)glfwGetTime();
         gameRunning = true;
         isPaused = !isPaused;
     }
