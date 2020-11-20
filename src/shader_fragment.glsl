@@ -81,6 +81,9 @@ void main()
     // Vetor que define o sentido da reflexão especular ideal.
     vec4 r = -l + 2*n*dot(n,l);
 
+    // Vetor que define blinn-phong.
+    vec4 h = normalize(v + l);
+
     // Coordenadas de textura U e V
     float U = 0.0;
     float V = 0.0;
@@ -135,7 +138,7 @@ void main()
         Kd = vec3(0.6, 0.6, 0.6);
         Ks = vec3(0.8, 0.8, 0.8);
         Ka = vec3(0.1,0.1,0.1);
-        q = 8.0;
+        q = 32.0;
 
         //Projeção esférica
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
@@ -211,6 +214,7 @@ void main()
     vec3 ambient_term =  Ka*Ia;// o termo ambiente
     // Termo especular utilizando o modelo de iluminação de Phong
     vec3 phong_specular_term  = Ks*I*pow(max(0, dot(r,v)), q); // o termo especular de Phong
+    vec3 blinn_phong_specular_term  = Ks*I*pow(dot(n, h), q); // o termo especular de Phong
 
     if      ( object_id == COW )      color = CowTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     else if ( object_id == BUNNY )    color = FurTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
@@ -218,7 +222,7 @@ void main()
     else if ( object_id == WALL1 )    color = FenceTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     else if ( object_id == MOON )     color = MoonTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     else if ( object_id == COWBUNNY ) color = gouraud_color;
-    else if ( object_id == COWBUNNYPHONG ) color = lambert_diffuse_term + ambient_term + phong_specular_term;;
+    else if ( object_id == COWBUNNYPHONG ) color = lambert_diffuse_term + ambient_term + blinn_phong_specular_term;;
 
     color = pow(color, vec3(1.0,1.0,1.0)/2.2);
 
