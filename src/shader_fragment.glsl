@@ -96,7 +96,7 @@ void main()
 
     if ( object_id == COW )
     {
-        // Propriedades espectrais do coelho
+        // Propriedades espectrais da vaca
         Kd = vec3(0.8, 0.8, 0.8);
         Ka = vec3(0.2,0.2,0.2);
         q = 8.0;
@@ -134,7 +134,7 @@ void main()
     }
     else if ( object_id == COWBUNNYPHONG )
     {
-        // Propriedades espectrais do coelho
+        // Propriedades espectrais do coelho que era vaca com BLINN PHONG
         Kd = vec3(0.6, 0.6, 0.6);
         Ks = vec3(0.8, 0.8, 0.8);
         Ka = vec3(0.1,0.1,0.1);
@@ -154,35 +154,37 @@ void main()
     }
     else if ( object_id == PLANE )
     {
-        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        // Coordenadas de textura do plano
         U = texcoords.x*8;
         V = texcoords.y*8;
 
        // Propriedades espectrais do plano
         Kd = vec3(0.2, 0.2, 0.2);
         Ks = vec3(0.3, 0.3, 0.3);
-        Ka = vec3(0.2,0.2,0.2); // Refletância ambiente
+        Ka = vec3(0.2,0.2,0.2); 
         q = 10.0;
     }
     else if ( object_id == WALL1)
     {
-        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        // Coordenadas de textura das paredes
         U = texcoords.x*16;
         V = texcoords.y;
 
-       // Propriedades espectrais do plano
-        Ka = vec3(0.4,0.4,0.4); // Refletância ambiente
+       // Propriedades espectrais das paredes
+        Ka = vec3(0.4,0.4,0.4);
         q = 10.0;
     }
     else if ( object_id == MOON)
     {
+        // luz diferenciada da lua
         l = normalize(vec4(2.1,-2.0,0.0,0.0));
-  // Propriedades espectrais do plano
+
+        // Propriedades espectrais da lua
         Kd = vec3(0.9, 0.9, 0.9);
-        Ka = vec3(0.2,0.2,0.2); // Refletância ambiente
+        Ka = vec3(0.2,0.2,0.2); 
         q = 10.0;
 
-          //Projeção esférica
+        //Projeção esférica
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
         float rho = 1.0;
         P = position_model;
@@ -214,7 +216,7 @@ void main()
     vec3 ambient_term =  Ka*Ia;// o termo ambiente
     // Termo especular utilizando o modelo de iluminação de Phong
     vec3 phong_specular_term  = Ks*I*pow(max(0, dot(r,v)), q); // o termo especular de Phong
-    vec3 blinn_phong_specular_term  = Ks*I*pow(dot(n, h), q); // o termo especular de Phong
+    vec3 blinn_phong_specular_term  = Ks*I*pow(dot(n, h), q); // o termo especular de Blinn Phong
 
     if      ( object_id == COW )      color = CowTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
     else if ( object_id == BUNNY )    color = FurTexture*(lambert_diffuse_term + ambient_term + phong_specular_term);
