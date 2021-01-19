@@ -1,2 +1,3 @@
 # fcg_trab
-aaaaaaaaaaaaaaaaaaaaaaaa
+
+Trabalho final da disciplina Fundamentos de Computação Gráfica, UFRGS.
